@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Connection URL
-const url = 'mongodb://127.0.0.1:27017/database';
+const url = 'mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority';
 
 // Function to establish the database connection
 async function dbConn() {
