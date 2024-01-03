@@ -198,7 +198,7 @@ app.post('/adddata', isAuthenticated, async (req, res) => {
   const username = req.session.username;
 
   try {
-    const client = await MongoClient.connect('mongodb://127.0.0.1:27017');
+    const client = await MongoClient.connect('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
@@ -226,7 +226,7 @@ app.post('/adddata', isAuthenticated, async (req, res) => {
 
 app.get('/getdata', isAuthenticated, async (req, res) => {
   try {
-    const client = await MongoClient.connect('mongodb://127.0.0.1:27017');
+    const client = await MongoClient.connect('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
@@ -251,7 +251,7 @@ app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
   }
 
   try {
-    const client = await MongoClient.connect('mongodb://127.0.0.1:27017');
+    const client = await MongoClient.connect('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
     const zeta = Number(zetacode)
@@ -278,7 +278,7 @@ app.post('/getdatabydate', isAuthenticated, async (req, res) => {
   }
 
   try {
-    const client = await MongoClient.connect('mongodb://127.0.0.1:27017');
+    const client = await MongoClient.connect('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
@@ -301,7 +301,7 @@ app.delete('/deletedata', isAuthenticated, async (req, res) => {
     if (loggedInUserPermission !== 'admin' || loggedInUserPermission !== 'editor') {
       return res.status(403).json({ message: 'Only admins and editors can delete data' });
     }
-    const client = await MongoClient.connect('mongodb://127.0.0.1:27017');
+    const client = await MongoClient.connect('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
@@ -330,7 +330,7 @@ app.delete('/deletedatabydate', isAuthenticated, async (req, res) => {
   }
 
   try {
-    const client = await MongoClient.connect('mongodb://127.0.0.1:27017');
+    const client = await MongoClient.connect('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
@@ -358,7 +358,7 @@ app.put('/updatedata', isAuthenticated, canEdit, async (req, res) => {
   }
 
   try {
-    const client = await MongoClient.connect('mongodb://127.0.0.1:27017');
+    const client = await MongoClient.connect('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
@@ -392,7 +392,7 @@ app.put('/updatedataTable', async (req, res) => {
       return res.status(400).json({ message: 'Invalid request. newFielddata must contain fields to update.' });
     }
 
-    const client = await MongoClient.connect('mongodb://127.0.0.1:27017');
+    const client = await MongoClient.connect('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
@@ -434,7 +434,7 @@ app.post('/importcsv', isAuthenticated, canEdit, upload.single('csvFile'), async
             username: username,
           };
 
-          const client = await MongoClient.connect('mongodb://127.0.0.1:27017');
+          const client = await MongoClient.connect('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
           const db = client.db('database');
           const collection = db.collection('sessions');
 
@@ -553,7 +553,7 @@ app.get('/fetchUsers', isAuthenticated, isAdmin, async (req, res) => {
 app.get('/generateCSV', isAuthenticated, async (req, res) => {
   try {
     // Connect to the MongoDB database
-    const client = new MongoClient('mongodb://127.0.0.1:27017', { useUnifiedTopology: true });
+    const client = new MongoClient('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
     await client.connect();
     const db = client.db('database');
     const collection = db.collection('maindatas');
@@ -600,7 +600,7 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
   try {
 
     // Connect to the MongoDB database
-    const client = new MongoClient('mongodb://127.0.0.1:27017', { useUnifiedTopology: true });
+    const client = new MongoClient('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
     await client.connect();
     const db = client.db('database');
     const collection = db.collection('maindatas');
@@ -663,7 +663,7 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
 //   try {
 
 //     // Connect to the MongoDB database
-//     const client = new MongoClient('mongodb://127.0.0.1:27017', { useUnifiedTopology: true });
+//     const client = new MongoClient('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
 //     await client.connect();
 //     const db = client.db('database');
 //     const collection = db.collection('maindatas');
@@ -727,7 +727,7 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
 //     const { date } = req.query; // Retrieve the query parameter "date"
 
 //     // Connect to the MongoDB database
-//     const client = new MongoClient('mongodb://127.0.0.1:27017', { useUnifiedTopology: true });
+//     const client = new MongoClient('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
 //     await client.connect();
 //     const db = client.db('database');
 //     const collection = db.collection('maindatas');
