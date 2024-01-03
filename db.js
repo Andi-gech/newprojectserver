@@ -5,12 +5,12 @@ const MongoStore = require('connect-mongo');
 async function connectDatabase() {
   try {
     // Mongoose connection
-    await mongoose.connect('mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', {
+    await mongoose.connect('mongodb+srv://andifab23:<9801TJmE0HGLgQkO>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
 
-    const mongoUrl = 'mongodb+srv://andifab23:<password>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority';
+    const mongoUrl = 'mongodb+srv://andifab23:<9801TJmE0HGLgQkO>@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority';
 
     // MongoDB native driver connection
     const client = new MongoClient(mongoUrl, {
