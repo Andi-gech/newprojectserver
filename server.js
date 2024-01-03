@@ -10,7 +10,7 @@ const MainData = require('./models/Data');
 const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
-const upload = multer({ dest: 'uploads/' });
+// const upload = multer({ dest: 'uploads/' });
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const ExcelJS = require('exceljs');
@@ -418,7 +418,7 @@ app.put('/updatedataTable', async (req, res) => {
 
 
 
-app.post('/importcsv', isAuthenticated, canEdit, upload.single('csvFile'), async (req, res) => {
+app.post('/importcsv', isAuthenticated, canEdit, async (req, res) => {
   try {
     const filePath = req.file.path;
     const username = req.session.username;
