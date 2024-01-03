@@ -21,7 +21,7 @@ const jwt = require('jsonwebtoken');
 // Call the connectToDatabase function to establish the connection
 dbConn()
   .then(() => {
-    app.listen(9000, () => {
+    app.listen(9050, () => {
       console.log('Server running on port 9000');
       
     });
