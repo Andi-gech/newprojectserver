@@ -423,7 +423,37 @@ app.put('/updatedataTable', async (req, res) => {
   }
 });
 
+app.delete('/deleteColumn/:columnName', async (req, res) => {
+  const columnName = req.params.columnName;
 
+  try {
+    // Check if columnName is null or undefined
+    if (!columnName) {
+      return res.status(400).json({ message: 'Invalid request. columnName is null or undefined.' });
+    }
+
+    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
+    const db = client.db('database');
+    const collection = db.collection('maindatas');
+
+    // Specify the update operation to remove a field
+    const updateOperation = { $unset: { [columnName]: 1 } };
+
+    // Update all documents in the collection
+    const result = await collection.updateMany({}, updateOperation);
+
+    client.close();
+
+    if (result.modifiedCount > 0) {
+      res.json({ message: `Column '${columnName}' deleted successfully` });
+    } else {
+      res.status(404).json({ message: `Column '${columnName}' not found` });
+    }
+  } catch (error) {
+    console.error('Error while deleting column:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 app.post('/importcsv', isAuthenticated, canEdit, async (req, res) => {
   try {
