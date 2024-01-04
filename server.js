@@ -202,7 +202,7 @@ app.post('/auth/changepassword', isAuthenticated, async (req, res) => {
 
 app.post('/adddata', isAuthenticated, async (req, res) => {
   const data = req.body;
-  const username = req.session.username;
+ 
 
   try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
@@ -217,7 +217,7 @@ app.post('/adddata', isAuthenticated, async (req, res) => {
     }
 
     // Add the username field to the data object
-    data.username = username;
+    data.username = "name";
 
     // Insert the new document into the collection
     await collection.insertOne(data);
