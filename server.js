@@ -301,13 +301,11 @@ app.post('/getdatabydate', isAuthenticated, async (req, res) => {
 });
 
 app.delete('/deletedata', isAuthenticated, async (req, res) => {
-  const loggedInUserPermission = req.session.permission;
+ 
   const { zetacode } = req.body;
  
   try { 
-    if (loggedInUserPermission !== 'admin' || loggedInUserPermission !== 'editor') {
-      return res.status(403).json({ message: 'Only admins and editors can delete data' });
-    }
+   
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
