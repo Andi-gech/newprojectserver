@@ -51,10 +51,16 @@ app.use(express.json());
 
 // Middleware to check authentication
 const isAuthenticated = (req, res, next) => {
-  const token = req.header('Authorization');
+  const authHeader = req.header('Authorization');
 
-  if (!token) {
+  if (!authHeader) {
     return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const [tokenType, token] = authHeader.split(' ');
+
+  if (!tokenType || tokenType.toLowerCase() !== 'jwt' || !token) {
+    return res.status(401).json({ message: 'Invalid token type or format' });
   }
 
   try {
@@ -70,6 +76,7 @@ const isAuthenticated = (req, res, next) => {
     res.status(401).json({ message: 'Invalid token' });
   }
 };
+
 
 // Middleware to check role
 const canEdit = (req, res, next) => {
