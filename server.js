@@ -19,6 +19,8 @@ const cors=require('cors')
 const streamifier = require('streamifier');
 const fastcsv = require('fast-csv');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+
 mongoose.set('strictQuery', false);
 
 // Call the connectToDatabase function to establish the connection
