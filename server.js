@@ -623,18 +623,16 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
 
 
 
+
 app.get('/generateExcel', isAuthenticated, async (req, res) => {
   try {
-
     // Connect to the MongoDB database
     const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
     await client.connect();
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
-    // Construct the query based on the provided date parameter
-
-    // Fetch the collection documents based on the query
+    // Fetch the collection documents
     const data = await collection.find().toArray();
 
     // Close the MongoDB connection
@@ -642,7 +640,7 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
 
     // Check if any data was found
     if (data.length === 0) {
-      return res.status(404).json({ message: 'No data found for the provided date' });
+      return res.status(404).json({ message: 'No data found' });
     }
 
     // Create a new Excel workbook and worksheet
@@ -654,37 +652,23 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
     worksheet.addRow(headers);
 
     // Add data rows to the worksheet
-    data.forEach(row => {
-      const values = Object.values(row);
-      worksheet.addRow(values);
-    });
+    data.forEach(row => worksheet.addRow(Object.values(row)));
 
     // Generate a unique filename for the Excel file
-    const excelFilePath = `output_${Date.now()}.xlsx`;
-
-    // Save the workbook to the Excel file
-    await workbook.xlsx.writeFile(excelFilePath);
+    const excelBuffer = await workbook.xlsx.writeBuffer();
 
     // Set response headers for file download
-    res.setHeader('Content-Disposition', `attachment; filename=${excelFilePath}`);
+    res.setHeader('Content-Disposition', 'attachment; filename=output.xlsx');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
-    // Stream the file to the response
-    res.sendFile(excelFilePath, { root: __dirname }, () => {
-      // Remove the file after it has been sent
-      fs.unlink(excelFilePath, err => {
-        if (err) {
-          console.error('Error while deleting the Excel file:', err);
-        } else {
-          console.log('Excel file deleted successfully.');
-        }
-      });
-    });
+    // Send the in-memory Excel data to the client
+    res.send(excelBuffer);
   } catch (error) {
     console.error('Error while generating Excel file:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 // app.get('/generateExcel', isAuthenticated, async (req, res) => {
 //   try {
