@@ -33,6 +33,8 @@ dbConn()
  
 // Generate a random secret key
 const secretKey = crypto.randomBytes(64).toString('hex');
+const storage = multer.memoryStorage(); // Store the file in memory
+const upload = multer({ storage: storage });
 
 
 const currentTime = new Date();
@@ -454,38 +456,40 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
   }
 });
 
-app.post('/importcsv', isAuthenticated,  async (req, res) => {
+app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) => {
   try {
-    const filePath = req.file.path;
-  
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const buffer = req.file.buffer;
+    const data = buffer.toString('utf8');
+
+    const rows = await csv().fromString(data);
 
     const results = [];
-    fs.createReadStream(filePath)
-      .pipe(csv())
-      .on('data', async (data) => {
-        try {
-          // Add the username column to each row
-          const rowWithUsername = {
-            ...data,
-            username: "username",
-          };
 
-          const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
-          const db = client.db('database');
-          const collection = db.collection('sessions');
+    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&m=majority');
+    const db = client.db('database');
+    const collection = db.collection('sessions');
 
-          await collection.insertOne(rowWithUsername);
+    for (const row of rows) {
+      try {
+        // Add the username column to each row
+        const rowWithUsername = {
+          ...row,
+          username: "username",
+        };
 
-          client.close();
-        } catch (error) {
-          console.error('Error while inserting data:', error);
-        } 
-      }) 
-      .on('end', () => {
-        fs.unlinkSync(filePath); // Delete the uploaded CSV file
+        await collection.insertOne(rowWithUsername);
+      } catch (error) {
+        console.error('Error while inserting data:', error);
+      }
+    }
 
-        res.json({ message: 'CSV data imported successfully' });
-      });
+    client.close();
+
+    res.json({ message: 'CSV data imported successfully' });
   } catch (error) {
     console.error('Error while importing CSV:', error);
     res.status(500).json({ message: 'Internal server error' });
