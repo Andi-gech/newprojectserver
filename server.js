@@ -8,7 +8,8 @@ const app = express();
 const User = require('./models/Users');
 const MainData = require('./models/Data');
 const multer = require('multer');
-const csv = require('csv-parser');
+const {parse}= require('csv-parse');
+
 const fs = require('fs');
 // const upload = multer({ dest: 'uploads/' });
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
@@ -465,7 +466,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     const buffer = req.file.buffer;
     const data = buffer.toString('utf8');
 
-    const rows = await csv.parse(data, { columns: true });
+    const rows = await parse(data, { columns: true });
 
     const results = [];
 
