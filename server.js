@@ -465,7 +465,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     const buffer = req.file.buffer;
     const data = buffer.toString('utf8');
 
-    const rows = await csv.parse(data, { columns: true });
+    const rows = await csv(data, { columns: true });
 
     const results = [];
 
