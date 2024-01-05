@@ -497,7 +497,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
       });
 
     // Pipe the CSV data into the csv-parser stream
-    streamifier.createReadStream(data).pipe(csvStream);
+    streamifier.createReadStream(data).pipe(csv());
   } catch (error) {
     console.error('Error while importing CSV:', error);
     res.status(500).json({ message: 'Internal server error' });
