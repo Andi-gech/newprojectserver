@@ -9,7 +9,7 @@ const User = require('./models/Users');
 const MainData = require('./models/Data');
 const multer = require('multer');
 
-const { parse } = require("csv-parse");
+const { Parser } = require("csv-parse");
 
 const fs = require('fs');
 // const upload = multer({ dest: 'uploads/' });
@@ -467,7 +467,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     const buffer = req.file.buffer;
     const data = buffer.toString('utf8');
 
-    const rows = await parse(data, { columns: true });
+    const rows = await Parser(data, { columns: true });
 
     const results = [];
 
