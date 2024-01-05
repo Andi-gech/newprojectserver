@@ -15,7 +15,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const ExcelJS = require('exceljs');
 const cors=require('cors')
-const csv = require('fast-csv');
+const fastcsv = require('fast-csv');
 const jwt = require('jsonwebtoken');
 
 
@@ -602,7 +602,7 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     res.setHeader('Content-Type', 'text/csv');
 
     // Create a writable stream to store CSV data in memory
-    const csvStream = csv.format({ headers: true });
+    const csvStream = fastcsv.format({ headers: true });
 
     // Pipe the CSV data to the response
     csvStream.pipe(res);
