@@ -596,14 +596,20 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     // Fetch the collection documents
     const data = await collection.find({}).toArray();
 
-    // Define the CSV writer and specify the file path
-    const csvFilePath = 'output.csv';
+    // Define the CSV writer in-memory
     const csvWriter = createCsvWriter({
-      path: csvFilePath,
+      path: 'in-memory.csv',  // This is not a real file path, just a placeholder
       header: Object.keys(data[0]).map(key => ({ id: key, title: key }))
     });
 
-    // Write the data to the CSV file
+    // Create a writable stream to store CSV data in memory
+    let csvData = '';
+    csvWriter._write = (chunk, encoding, callback) => {
+      csvData += chunk;
+      callback();
+    };
+
+    // Write the data to the CSV writer
     await csvWriter.writeRecords(data);
 
     // Close the MongoDB connection
@@ -613,17 +619,8 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename=output.csv');
     res.setHeader('Content-Type', 'text/csv');
 
-    // Stream the file to the response
-    res.download(csvFilePath, () => {
-      // Remove the file after it has been sent
-      fs.unlink(csvFilePath, err => {
-        if (err) {
-          console.error('Error while deleting the CSV file:', err);
-        } else {
-          console.log('CSV file deleted successfully.');
-        }
-      });
-    });
+    // Send the in-memory CSV data to the client
+    res.send(csvData);
   } catch (error) {
     console.error('Error while generating CSV file:', error);
     res.status(500).json({ message: 'Internal server error' });
