@@ -453,7 +453,7 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
   }
 });
 
-app.post('/importcsv', isAuthenticated, canEdit, async (req, res) => {
+app.post('/importcsv', isAuthenticated,  async (req, res) => {
   try {
     const filePath = req.file.path;
   
