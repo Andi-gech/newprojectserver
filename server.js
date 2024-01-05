@@ -37,9 +37,7 @@ dbConn()
  
 // Generate a random secret key
 const secretKey = crypto.randomBytes(64).toString('hex');
-const storage = multer.memoryStorage(); // Store the file in memory
-const upload = multer({ storage: storage });
-
+const upload = multer({ dest: 'uploads/' });
 
 const currentTime = new Date();
 const expirationTime = new Date(currentTime.getTime() + 60 * 60 * 1000);
