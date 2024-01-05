@@ -15,6 +15,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const ExcelJS = require('exceljs');
 const cors=require('cors')
+const csv = require('fast-csv');
 const jwt = require('jsonwebtoken');
 
 
@@ -585,8 +586,6 @@ app.get('/fetchUsers', isAuthenticated, isAdmin, async (req, res) => {
 });
 
 
-
-
 app.get('/generateCSV', isAuthenticated, async (req, res) => {
   try {
     // Connect to the MongoDB database
@@ -598,30 +597,24 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     // Fetch the collection documents
     const data = await collection.find({}).toArray();
 
-    // Define the CSV writer in-memory
-    const csvWriter = createCsvWriter({
-      header: Object.keys(data[0]).map(key => ({ id: key, title: key }))
-    });
-
-    // Create a writable stream to store CSV data in memory
-    let csvData = '';
-    csvWriter._write = (chunk, encoding, callback) => {
-      csvData += chunk;
-      callback();
-    };
-
-    // Write the data to the CSV writer
-    await csvWriter.writeRecords(data);
-
-    // Close the MongoDB connection
-    await client.close();
-
     // Set response headers for file download
     res.setHeader('Content-Disposition', 'attachment; filename=output.csv');
     res.setHeader('Content-Type', 'text/csv');
 
-    // Send the in-memory CSV data to the client
-    res.send(csvData);
+    // Create a writable stream to store CSV data in memory
+    const csvStream = csv.format({ headers: true });
+
+    // Pipe the CSV data to the response
+    csvStream.pipe(res);
+
+    // Write the data to the CSV stream
+    data.forEach(item => csvStream.write(item));
+
+    // End the stream to finish the response
+    csvStream.end();
+
+    // Close the MongoDB connection
+    await client.close();
   } catch (error) {
     console.error('Error while generating CSV file:', error);
     res.status(500).json({ message: 'Internal server error' });

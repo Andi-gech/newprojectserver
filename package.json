@@ -9,23 +9,21 @@
   },
   "author": "",
   "license": "ISC",
-  
-    "dependencies": {
-      "express": "^4.17.3",
-      "mongoose": "^6.0.10",
-      "express-session": "^1.17.2",
-      "mongodb": "^4.1.0",
-      "crypto": "^1.0.1",
-      "bcrypt": "^5.0.1",
-      "multer": "^1.4.4",
-      "csv-parser": "^3.0.0",
-      "fs": "0.0.1-security",
-      "csv-writer": "",
-      "path": "^0.12.7",
-      "exceljs": "^4.2.0",
-      "cors": "^2.8.5",
-      "jsonwebtoken": "^8.5.1"
-    }
-  
-  
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "csv-parser": "^3.0.0",
+    "csv-writer": "",
+    "exceljs": "^4.2.0",
+    "express": "^4.17.3",
+    "express-session": "^1.17.2",
+    "fast-csv": "^4.3.6",
+    "fs": "0.0.1-security",
+    "jsonwebtoken": "^8.5.1",
+    "mongodb": "^4.1.0",
+    "mongoose": "^6.0.10",
+    "multer": "^1.4.4",
+    "path": "^0.12.7"
+  }
 }
