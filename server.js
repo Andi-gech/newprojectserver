@@ -465,8 +465,9 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     const fileBuffer = req.file.buffer; // Access the file content directly
 
     const results = [];
-    fs.createReadStream(fileBuffer)
-      .pipe(csv())
+
+    // Use csv-parse to parse the CSV directly from the buffer
+    csv(fileBuffer, { columns: true })
       .on('data', async (data) => {
         try {
           // Add the username column to each row
@@ -487,8 +488,6 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
         } 
       }) 
       .on('end', () => {
-        fs.unlinkSync(filePath); // Delete the uploaded CSV file
-
         res.json({ message: 'CSV data imported successfully' });
       });
   } catch (error) {
