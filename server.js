@@ -460,46 +460,38 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
   }
 });
 
-app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) => {
+app.post('/importcsv', isAuthenticated, canEdit, upload.single('csvFile'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
+    const filePath = req.file.path;
+  
 
-    const buffer = req.file.buffer;
-    const data = buffer.toString('utf8');
+    const results = [];
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on('data', async (data) => {
+        try {
+          // Add the username column to each row
+          const rowWithUsername = {
+            ...data,
+            username: username,
+          };
 
-    const rows = [];
+          const client = await MongoClient.connect('mongodb://127.0.0.1:27017');
+          const db = client.db('database');
+          const collection = db.collection('sessions');
 
-    // Use the csv-parser library to parse the CSV data
-    csv({ headers: true })
-      .on('data', (data) => rows.push(data))
-      .on('end', async () => {
-        const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&m=majority');
-        const db = client.db('database');
-        const collection = db.collection('sessions');
+          await collection.insertOne(rowWithUsername);
 
-        for (const row of rows) {
-          try {
-            // Add the username column to each row
-            const rowWithUsername = {
-              ...row,
-              username: "username",
-            };
-
-            await collection.insertOne(rowWithUsername);
-          } catch (error) {
-            console.error('Error while inserting data:', error);
-          }
-        }
-
-        client.close();
+          client.close();
+        } catch (error) {
+          console.error('Error while inserting data:', error);
+        } 
+      }) 
+      .on('end', () => {
+        fs.unlinkSync(filePath); // Delete the uploaded CSV file
 
         res.json({ message: 'CSV data imported successfully' });
       });
-
-    // Pipe the CSV data into the csv-parser stream
-    streamifier.createReadStream(data).pipe(csv());
   } catch (error) {
     console.error('Error while importing CSV:', error);
     res.status(500).json({ message: 'Internal server error' });
