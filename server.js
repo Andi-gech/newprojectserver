@@ -488,6 +488,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
         } 
       }) 
       .on('end', () => {
+        // Move response sending outside of the CSV parsing stream
         res.json({ message: 'CSV data imported successfully' });
       });
   } catch (error) {
