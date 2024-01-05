@@ -456,7 +456,7 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
 app.post('/importcsv', isAuthenticated, canEdit, async (req, res) => {
   try {
     const filePath = req.file.path;
-    const username = req.session.username;
+  
 
     const results = [];
     fs.createReadStream(filePath)
@@ -466,7 +466,7 @@ app.post('/importcsv', isAuthenticated, canEdit, async (req, res) => {
           // Add the username column to each row
           const rowWithUsername = {
             ...data,
-            username: username,
+            username: "username",
           };
 
           const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
