@@ -8,7 +8,7 @@ const app = express();
 const User = require('./models/Users');
 const MainData = require('./models/Data');
 const multer = require('multer');
-const { parse } = require("csv-parse");
+const { parse } = require('csv-parser');
 
 const fs = require('fs');
 // const upload = multer({ dest: 'uploads/' });
