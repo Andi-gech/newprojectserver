@@ -257,30 +257,31 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
 
 
 app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
-
-  const zetacode  = req.params.id;
+  const zetacode = req.params.id;
 
   if (!zetacode) {
-    return res.status(400).json({ message: 'Zetacode not provided in the request body' });
+    return res.status(400).json({ message: 'Zetacode not provided in the request parameters' });
   }
 
   try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
-    const zeta = Number(zetacode)
-    const data = await collection.findOne({ Zetacode: zeta||zetacode });
-console.log(data);
+
+    const data = await collection.findOne({ Zetacode: zetacode });
+
+    console.log(data);
+
     client.close();
 
     if (data) {
-     return res.json(data);
+      return res.json({ data: data });
     } else {
-     return  res.status(404).json({ message: 'Data not found' });
+      return res.status(404).json({ message: 'Data not found' });
     }
   } catch (error) {
     console.error('Error while retrieving data:', error);
-   return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 });
 
