@@ -462,12 +462,11 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
 
 app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) => {
   try {
-    const filePath = req.file.path;
-  
+    const fileBuffer = req.file.buffer; // Access the file content directly
 
     const results = [];
-    fs.createReadStream(filePath)
-      .pipe(csv())
+    // Assuming the content of the fileBuffer is a CSV format
+    csv.parse(fileBuffer.toString(), { columns: true })
       .on('data', async (data) => {
         try {
           // Add the username column to each row
@@ -485,11 +484,9 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
           client.close();
         } catch (error) {
           console.error('Error while inserting data:', error);
-        } 
-      }) 
+        }
+      })
       .on('end', () => {
-        fs.unlinkSync(filePath); // Delete the uploaded CSV file
-
         res.json({ message: 'CSV data imported successfully' });
       });
   } catch (error) {
