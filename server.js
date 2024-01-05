@@ -362,7 +362,7 @@ app.delete('/deletedatabydate', isAuthenticated, async (req, res) => {
   }
 });
 
-app.put('/updatedata', isAuthenticated, canEdit, async (req, res) => {
+app.put('/updatedata', isAuthenticated, async (req, res) => {
   
   const { zetacode, newData } = req.body;
 
@@ -374,6 +374,9 @@ app.put('/updatedata', isAuthenticated, canEdit, async (req, res) => {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
     const db = client.db('database');
     const collection = db.collection('maindatas');
+    if (newData._id) {
+      delete newData._id;
+    }
 
     const result = await collection.updateOne({ Zetacode: zetacode }, { $set: newData });
 
