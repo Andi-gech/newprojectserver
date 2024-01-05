@@ -8,7 +8,7 @@ const app = express();
 const User = require('./models/Users');
 const MainData = require('./models/Data');
 const multer = require('multer');
-const { parse } = require('csv-parser');
+const csv = require('csv-parser');
 
 const fs = require('fs');
 // const upload = multer({ dest: 'uploads/' });
@@ -466,31 +466,37 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     const buffer = req.file.buffer;
     const data = buffer.toString('utf8');
 
-    const rows = await parse(data, { columns: true });
+    const rows = [];
 
-    const results = [];
+    // Use the csv-parser library to parse the CSV data
+    csv({ headers: true })
+      .on('data', (data) => rows.push(data))
+      .on('end', async () => {
+        const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&m=majority');
+        const db = client.db('database');
+        const collection = db.collection('sessions');
 
-    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&m=majority');
-    const db = client.db('database');
-    const collection = db.collection('sessions');
+        for (const row of rows) {
+          try {
+            // Add the username column to each row
+            const rowWithUsername = {
+              ...row,
+              username: "username",
+            };
 
-    for (const row of rows) {
-      try {
-        // Add the username column to each row
-        const rowWithUsername = {
-          ...row,
-          username: "username",
-        };
+            await collection.insertOne(rowWithUsername);
+          } catch (error) {
+            console.error('Error while inserting data:', error);
+          }
+        }
 
-        await collection.insertOne(rowWithUsername);
-      } catch (error) {
-        console.error('Error while inserting data:', error);
-      }
-    }
+        client.close();
 
-    client.close();
+        res.json({ message: 'CSV data imported successfully' });
+      });
 
-    res.json({ message: 'CSV data imported successfully' });
+    // Pipe the CSV data into the csv-parser stream
+    streamifier.createReadStream(data).pipe(csvStream);
   } catch (error) {
     console.error('Error while importing CSV:', error);
     res.status(500).json({ message: 'Internal server error' });
