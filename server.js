@@ -1,7 +1,7 @@
 const express = require('express');
 const dbConn = require('./db/db.js');
 const session = require('express-session');
-const { MongoClient } = require('mongodb');
+const { MongoClient, MongoError } = require('mongodb');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const app = express();
@@ -20,8 +20,8 @@ const streamifier = require('streamifier');
 const fastcsv = require('fast-csv');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const stream = require('stream');
 
-mongoose.set('strictQuery', false);
 
 // Call the connectToDatabase function to establish the connection
 dbConn()
@@ -459,43 +459,85 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
 app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) => {
+  let client; // Declare the client variable outside the try block
+
   try {
-    const fileBuffer = req.file.buffer; // Access the file content directly
+    console.log('Entered route');
 
-    const results = [];
+    // Check if file and buffer exist
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({ message: 'No file uploaded or file buffer is empty' });
+    }
 
-    // Use csv-parse to parse the CSV directly from the buffer
-    csv(fileBuffer, { columns: true })
-      .on('data', async (data) => {
-        try {
-          // Add the username column to each row
-          const rowWithUsername = {
-            ...data,
-            username: username,
-          };
+    const fileBuffer = req.file.buffer;
 
-          const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority');
-          const db = client.db('database');
-          const collection = db.collection('sessions');
+    console.log('File Buffer Content:', fileBuffer.toString());
 
-          await collection.insertOne(rowWithUsername);
+    const readableStream = stream.Readable.from(fileBuffer.toString());
 
-          client.close();
-        } catch (error) {
-          console.error('Error while inserting data:', error);
-        } 
-      }) 
-      .on('end', () => {
-        // Move response sending outside of the CSV parsing stream
-        res.json({ message: 'CSV data imported successfully' });
-      });
+    await new Promise((resolve, reject) => {
+      readableStream
+        .pipe(csv())
+        .on('data', async (data) => {
+          try {
+            console.log('Processing data:', data);
+
+            // Assuming you have a way to get the username
+            const username = "sd";
+
+            // Add the username column to each row
+            const rowWithUsername = {
+              ...data,
+              username: username,
+            };
+
+            client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
+
+            await client.connect();
+
+            const db = client.db('database');
+            const collection = db.collection('maindatas');
+
+            // Attempt to insert the data
+            await collection.insertOne(rowWithUsername);
+
+            console.log('Data inserted successfully');
+          } catch (error) {
+            // Check for duplicate key error (code 11000)
+            if (error instanceof MongoError && error.code === 11000) {
+              console.error('Duplicate key error:', error);
+              // Handle duplicate key error
+              // You can send a specific response or take appropriate action
+            } else {
+              // Other errors
+              console.error('Error inserting data:', error);
+              reject(error);
+            }
+          }
+        })
+        .on('end', () => {
+          resolve();
+          res.json({ message: 'CSV data imported successfully' });
+        })
+        .on('error', (error) => {
+          console.error('CSV processing error:', error);
+          res.status(400).json(error);
+        });
+    });
+
+    console.log('Route execution completed');
   } catch (error) {
     console.error('Error while importing CSV:', error);
     res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    if (client) {
+      // Close the MongoDB client connection if it was initialized
+      await client.close();
+    }
   }
 });
+
 
 
 app.post('/createUser', isAuthenticated, isAdmin, async (req, res) => {
