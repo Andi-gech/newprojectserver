@@ -585,6 +585,8 @@ app.get('/fetchUsers', isAuthenticated, isAdmin, async (req, res) => {
 });
 
 
+
+
 app.get('/generateCSV', isAuthenticated, async (req, res) => {
   try {
     // Connect to the MongoDB database
@@ -598,7 +600,6 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
 
     // Define the CSV writer in-memory
     const csvWriter = createCsvWriter({
-      path: 'in-memory.csv',  // This is not a real file path, just a placeholder
       header: Object.keys(data[0]).map(key => ({ id: key, title: key }))
     });
 
@@ -626,6 +627,7 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 
 app.get('/generateExcel', isAuthenticated, async (req, res) => {
