@@ -269,7 +269,7 @@ app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
     const db = client.db('database');
     const collection = db.collection('maindatas');
     const zeta = Number(zetacode)
-    const data = await collection.findOne({ Zetacode: zeta });
+    const data = await collection.findOne({ Zetacode: zeta||zetacode });
 console.log(data);
     client.close();
 
