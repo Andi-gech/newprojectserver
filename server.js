@@ -465,7 +465,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     const fileBuffer = req.file.buffer; // Access the file content directly
 
     const results = [];
-    fs.createReadStream(filePath)
+    fs.createReadStream(fileBuffer)
       .pipe(csv())
       .on('data', async (data) => {
         try {
