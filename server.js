@@ -257,7 +257,7 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
 
 
 app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
-  const loggedInUserPermission = req.session.permission;
+
   const zetacode  = req.params.id;
 
   if (!zetacode) {
