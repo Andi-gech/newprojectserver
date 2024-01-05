@@ -460,7 +460,7 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
   }
 });
 
-app.post('/importcsv', isAuthenticated, canEdit, upload.single('csvFile'), async (req, res) => {
+app.post('/importcsv', isAuthenticated, upload.single('csvFile'), async (req, res) => {
   try {
     const filePath = req.file.path;
   
