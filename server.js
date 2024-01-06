@@ -346,10 +346,10 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
 
 
 app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
-  const zetacode = req.params.id;
+  const zetacode = parseInt(req.params.id, 10); // Parse the 'id' parameter as an integer
 
-  if (!zetacode) {
-    return res.status(400).json({ message: 'Zetacode not provided in the request parameters' });
+  if (isNaN(zetacode)) {
+    return res.status(400).json({ message: 'Zetacode must be a valid number' });
   }
 
   try {
@@ -373,6 +373,7 @@ app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 
 app.post('/getdatabydate', isAuthenticated, async (req, res) => {
