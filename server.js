@@ -539,57 +539,70 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
 
     const readableStream = stream.Readable.from(fileBuffer.toString());
 
-    await new Promise((resolve, reject) => {
-      readableStream
-        .pipe(csv())
-        .on('data', async (data) => {
-          try {
-            console.log('Processing data:', data);
+    await new Promise(async (resolve, reject) => {
+      client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
 
-            // Assuming you have a way to get the username
-            const username = "sd";
+      await client.connect();
 
-            // Add the username column to each row
-            const rowWithUsername = {
-              ...data,
-              username: username,
-            };
+      const session = client.startSession();
+      session.startTransaction();
 
-            client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
+      try {
+        readableStream
+          .pipe(csv())
+          .on('data', async (data) => {
+            try {
+              console.log('Processing data:', data);
 
-            await client.connect();
+              // Assuming you have a way to get the username
+              const username = "sd";
 
-            const db = client.db('database');
-            const collection = db.collection('maindatas');
+              // Add the username column to each row
+              const rowWithUsername = {
+                ...data,
+                username: username,
+              };
 
-            // Attempt to insert the data
-            await collection.insertOne(rowWithUsername);
+              const db = client.db('database');
+              const collection = db.collection('maindatas');
 
-            console.log('Data inserted successfully');
-          } catch (error) {
-            // Check for duplicate key error (code 11000)
-            if (error instanceof MongoError && error.code === 11000) {
-              console.error('Duplicate key error:', error);
-              // Handle duplicate key error
-              // You can send a specific response or take appropriate action
-            } else {
-              // Other errors
-              console.error('Error inserting data:', error);
-              reject(error);
+              // Attempt to insert the data within the transaction
+              await collection.insertOne(rowWithUsername, { session });
+
+              console.log('Data inserted successfully');
+            } catch (error) {
+              // Check for duplicate key error (code 11000)
+              if (error instanceof MongoError && error.code === 11000) {
+                console.error('Duplicate key error:', error);
+                // Handle duplicate key error
+                // You can send a specific response or take appropriate action
+              } else {
+                // Other errors
+                console.error('Error inserting data:', error);
+                reject(error);
+              }
             }
-          }
-        })
-        .on('end', () => {
-          resolve();
-          res.json({ message: 'CSV data imported successfully' });
-        })
-        .on('error', (error) => {
-          console.error('CSV processing error:', error);
-          res.status(400).json(error);
-        });
+          })
+          .on('end', async () => {
+            await session.commitTransaction();
+            resolve();
+          })
+          .on('error', async (error) => {
+            console.error('CSV processing error:', error);
+            await session.abortTransaction();
+            reject(error);
+          });
+      } catch (error) {
+        console.error('Error during transaction:', error);
+        await session.abortTransaction();
+        reject(error);
+      } finally {
+        session.endSession();
+      }
     });
 
     console.log('Route execution completed');
+    res.json({ message: 'CSV data imported successfully' });
   } catch (error) {
     console.error('Error while importing CSV:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -600,6 +613,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     }
   }
 });
+
 
 
 
@@ -779,122 +793,3 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
-
-// app.get('/generateExcel', isAuthenticated, async (req, res) => {
-//   try {
-
-//     // Connect to the MongoDB database
-//     const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
-//     await client.connect();
-//     const db = client.db('database');
-//     const collection = db.collection('maindatas');
-
-//     // Construct the query based on the provided date parameter
-
-//     // Fetch the collection documents based on the query
-//     const data = await collection.find().toArray();
-
-//     // Close the MongoDB connection
-//     await client.close();
-
-//     // Check if any data was found
-//     if (data.length === 0) {
-//       return res.status(404).json({ message: 'No data found for the provided date' });
-//     }
-
-//     // Create a new Excel workbook and worksheet
-//     const workbook = new ExcelJS.Workbook();
-//     const worksheet = workbook.addWorksheet('Data');
-
-//     // Add headers to the worksheet
-//     const headers = Object.keys(data[0]);
-//     worksheet.addRow(headers);
-
-//     // Add data rows to the worksheet
-//     data.forEach(row => {
-//       const values = Object.values(row);
-//       worksheet.addRow(values);
-//     });
-
-//     // Generate a unique filename for the Excel file
-//     const excelFilePath = `output_${Date.now()}.xlsx`;
-
-//     // Save the workbook to the Excel file
-//     await workbook.xlsx.writeFile(excelFilePath);
-
-//     // Set response headers for file download
-//     res.setHeader('Content-Disposition', `attachment; filename=${excelFilePath}`);
-//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-
-//     // Stream the file to the response
-//     res.sendFile(excelFilePath, { root: __dirname }, () => {
-//       // Remove the file after it has been sent
-//       fs.unlink(excelFilePath, err => {
-//         if (err) {
-//           console.error('Error while deleting the Excel file:', err);
-//         } else {
-//           console.log('Excel file deleted successfully.');
-//         }
-//       });
-//     });
-//   } catch (error) {
-//     console.error('Error while generating Excel file:', error);
-//     res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
-
-// app.get('/generateCSV', async (req, res) => {
-//   try {
-//     const { date } = req.query; // Retrieve the query parameter "date"
-
-//     // Connect to the MongoDB database
-//     const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
-//     await client.connect();
-//     const db = client.db('database');
-//     const collection = db.collection('maindatas');
-
-//     // Construct the query based on the provided date parameter
-//     const query = date ? { date: { $eq: date } } : {}; // Adjust the field name "date" accordingly
-
-//     // Fetch the collection documents based on the query
-//     const data = await collection.find(query).toArray();
-
-//     // Close the MongoDB connection
-//     await client.close();
-
-//     // Check if any data was found
-//     if (data.length === 0) {
-//       return res.status(404).json({ message: 'No data found for the provided date' });
-//     }
-
-//     // Define the CSV writer and specify the file path
-//     const csvFilePath = 'output.csv';
-//     const csvWriter = createCsvWriter({
-//       path: csvFilePath,
-//       header: Object.keys(data[0]).map(key => ({ id: key, title: key }))
-//     });
-
-//     // Write the data to the CSV file
-//     await csvWriter.writeRecords(data);
-
-//     // Set response headers for file download
-//     res.setHeader('Content-Disposition', 'attachment; filename=output.csv');
-//     res.setHeader('Content-Type', 'text/csv');
-
-//     // Stream the file to the response
-//     res.download(csvFilePath, () => {
-//       // Remove the file after it has been sent
-//       fs.unlink(csvFilePath, err => {
-//         if (err) {
-//           console.error('Error while deleting the CSV file:', err);
-//         } else {
-//           console.log('CSV file deleted successfully.');
-//         }
-//       });
-//     });
-//   } catch (error) {
-//     console.error('Error while generating CSV file:', error);
-//     res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
