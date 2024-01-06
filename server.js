@@ -524,6 +524,7 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
 });
 app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) => {
   let client; // Declare the client variable outside the try block
+  let session; // Declare the session variable
 
   try {
     console.log('Entered route');
@@ -539,14 +540,14 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
 
     const readableStream = stream.Readable.from(fileBuffer.toString());
 
+    client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
+
+    await client.connect();
+
+    session = client.startSession();
+    session.startTransaction();
+
     await new Promise(async (resolve, reject) => {
-      client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
-
-      await client.connect();
-
-      const session = client.startSession();
-      session.startTransaction();
-
       try {
         readableStream
           .pipe(csv())
@@ -584,8 +585,13 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
             }
           })
           .on('end', async () => {
-            await session.commitTransaction();
-            resolve();
+            // Check if the session is still valid before committing
+            if (!session.isExpired()) {
+              await session.commitTransaction();
+              resolve();
+            } else {
+              reject(new Error('Session expired'));
+            }
           })
           .on('error', async (error) => {
             console.error('CSV processing error:', error);
@@ -613,6 +619,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     }
   }
 });
+
 
 
 
