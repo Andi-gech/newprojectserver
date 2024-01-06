@@ -300,8 +300,36 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
-    // Use projection to exclude _id field
-    const data = await collection.find({}, { projection: { _id: 0 } }).toArray();
+    const query = {};
+
+    if (req.query.minHotTemperature && req.query.maxHotTemperature) {
+      const minHotTemperature = parseFloat(req.query.minHotTemperature);
+      const maxHotTemperature = parseFloat(req.query.maxHotTemperature);
+
+      if (!isNaN(minHotTemperature) && !isNaN(maxHotTemperature)) {
+        query.HotTemperature = { $gte: minHotTemperature, $lte: maxHotTemperature };
+      }
+    }
+
+    if (req.query.startDate && req.query.endDate) {
+      const startDate = new Date(req.query.startDate);
+      const endDate = new Date(req.query.endDate);
+
+      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+        query.Date = { $gte: startDate, $lte: endDate };
+      }
+    }
+
+    // Add 'Zetacode' search condition
+    if (req.query.zetacode) {
+      const zetacode = parseInt(req.query.zetacode);
+      if (!isNaN(zetacode)) {
+        query.Zetacode = zetacode;
+      }
+    }
+    console.log('Query:', query);
+
+    const data = await collection.find(query, { projection: { _id: 0,additionalData:0 } }).toArray();
 
     client.close();
 
@@ -311,6 +339,9 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+
+
 
 
 
@@ -523,13 +554,13 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
   }
 });
 app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) => {
-  let client; // Declare the client variable outside the try block
-  let session; // Declare the session variable
+  let client;
+  let successCount = 0;
+  let errorCount = 0;
 
   try {
     console.log('Entered route');
 
-    // Check if file and buffer exist
     if (!req.file || !req.file.buffer) {
       return res.status(400).json({ message: 'No file uploaded or file buffer is empty' });
     }
@@ -540,81 +571,105 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
 
     const readableStream = stream.Readable.from(fileBuffer.toString());
 
-    client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
-
-    await client.connect();
-
-    session = client.startSession();
-    session.startTransaction();
-
     await new Promise(async (resolve, reject) => {
-      try {
-        readableStream
-          .pipe(csv())
-          .on('data', async (data) => {
-            try {
-              console.log('Processing data:', data);
+      let processedCount = 0;
+      let totalRecords = 0;
 
-              // Assuming you have a way to get the username
-              const username = "sd";
+      readableStream
+        .pipe(csv())
+        .on('data', async (data) => {
+          try {
+            console.log('Processing data:', data);
 
-              // Add the username column to each row
-              const rowWithUsername = {
-                ...data,
-                username: username,
-              };
+            const username = "sd";
 
-              const db = client.db('database');
-              const collection = db.collection('maindatas');
+            const rowWithUsername = {
+              Location: data.Location,
+              Zetacode: parseInt(data.Zetacode),
+              Room: data.Room,
+              HelpDeskReference: data.HelpDeskReference,
+              IPS: data.IPS === 'true',
+              Fault: data.Fault,
+              Date: new Date(data.Date),
+              HotTemperature: parseFloat(data.HotTemperature),
+              HotFlow: parseFloat(data.HotFlow),
+              HotReturn: parseFloat(data.HotReturn),
+              ColdTemperature: parseFloat(data.ColdTemperature),
+              ColdFlow: parseFloat(data.ColdFlow),
+              ColdReturn: parseFloat(data.ColdReturn),
+              HotFlushTemperature: parseFloat(data.HotFlushTemperature),
+              TapNotSet: data.TapNotSet === 'true',
+              ColdFlushTemperature: parseFloat(data.ColdFlushTemperature),
+              TMVFail: data.TMVFail === 'true',
+              PreflushSampleTaken: data.PreflushSampleTaken === 'true',
+              PostflushSampleTaken: data.PostflushSampleTaken === 'true',
+              ThermalFlush: data.ThermalFlush,
+               };
 
-              // Attempt to insert the data within the transaction
-              await collection.insertOne(rowWithUsername, { session });
+            client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/?retryWrites=true&w=majority', { useUnifiedTopology: true });
 
-              console.log('Data inserted successfully');
-            } catch (error) {
-              // Check for duplicate key error (code 11000)
-              if (error instanceof MongoError && error.code === 11000) {
-                console.error('Duplicate key error:', error);
-                // Handle duplicate key error
-                // You can send a specific response or take appropriate action
-              } else {
-                // Other errors
-                console.error('Error inserting data:', error);
-                reject(error);
-              }
-            }
-          })
-          .on('end', async () => {
-            // Check if the session is still valid before committing
-            if (!session.isExpired()) {
-              await session.commitTransaction();
-              resolve();
+            await client.connect();
+
+            const db = client.db('database');
+            const collection = db.collection('maindatas');
+
+            await collection.insertOne(rowWithUsername);
+
+            console.log('Data inserted successfully');
+
+            successCount++;
+          } catch (error) {
+            if (error instanceof MongoError && error.code === 11000) {
+              console.error('Duplicate key error:', error);
+              // Handle duplicate key error
+              // You can send a specific response or take appropriate action
+              errorCount++;
             } else {
-              reject(new Error('Session expired'));
+              console.error('Error inserting data:', error);
+              errorCount++;
+              reject(error);
             }
-          })
-          .on('error', async (error) => {
-            console.error('CSV processing error:', error);
-            await session.abortTransaction();
-            reject(error);
-          });
-      } catch (error) {
-        console.error('Error during transaction:', error);
-        await session.abortTransaction();
-        reject(error);
-      } finally {
-        session.endSession();
-      }
+          } finally {
+            processedCount++;
+
+            // Check if all records have been processed
+            if (processedCount === totalRecords) {
+              resolve();
+            }
+          }
+        })
+        .on('end', () => {
+          // Response will be sent in the 'resolve' block
+        })
+        .on('error', (error) => {
+          console.error('CSV processing error:', error);
+          res.status(400).json({ message: 'Error processing CSV', error });
+          reject(error);
+        })
+        .on('data', () => {
+          totalRecords++;
+        })
+        .on('end', () => {
+          if (totalRecords === 0) {
+            res.status(400).json({ message: 'No records found in the CSV file' });
+            reject('No records found in the CSV file');
+          }
+        });
+    });
+
+    // Include success and error counts in the response message
+    res.json({
+      message: 'CSV data imported successfully',
+      successCount,
+      errorCount,
     });
 
     console.log('Route execution completed');
-    res.json({ message: 'CSV data imported successfully' });
   } catch (error) {
     console.error('Error while importing CSV:', error);
     res.status(500).json({ message: 'Internal server error' });
   } finally {
     if (client) {
-      // Close the MongoDB client connection if it was initialized
       await client.close();
     }
   }
