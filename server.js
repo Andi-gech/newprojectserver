@@ -228,7 +228,7 @@ app.post('/auth/signout', async (req, res) => {
 // Change password route
 app.post('/auth/changepassword', isAuthenticated, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  const username = req.session.username;
+  const username = req.user;
 
   try {
     // Find the user by username in the database
