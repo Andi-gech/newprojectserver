@@ -296,7 +296,8 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
-    const data = await collection.find().toArray();
+    // Use projection to exclude _id field
+    const data = await collection.find({}, { projection: { _id: 0 } }).toArray();
 
     client.close();
 
@@ -306,6 +307,7 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 
 app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
