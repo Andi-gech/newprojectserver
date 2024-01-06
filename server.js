@@ -115,6 +115,7 @@ const isAdmin = (req, res, next) => {
 // Sign-in route
 app.post('/auth/signin', async (req, res) => {
   const { username, password } = req.body;
+  console.log(username,password)
 
   try {
     // Find the user by username in the database
@@ -125,30 +126,81 @@ app.post('/auth/signin', async (req, res) => {
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (isMatch) {
-        // Generate a JWT token with the user's information
-        const token = jwt.sign(
+        // Generate an access token with the user's information
+        const accessToken = jwt.sign(
           {
             username: user.username,
             permission: user.permission,
           },
           'your-secret-key', // Replace with a secure secret key
-          { expiresIn: '1h' } // Token expiration time
+          { expiresIn: 3600 } // Token expiration time
+        );
+
+        // Generate a refresh token
+        const refreshToken = jwt.sign(
+          { username: user.username },
+          'your-refresh-secret-key', // Replace with a different secure secret key
+          { expiresIn: 25200 } // Refresh token expiration time
         );
 
         res.json({
-          token,
-          expiresIn: '1h', // Example expiration time, you can customize this
-          tokenType: 'Bearer', // Specify the token type (e.g., Bearer)
-          authUserState: 'authenticated', // Example authentication state
-          refreshToken: 'your-refresh-token', // Replace with the actual refresh token
-          refreshTokenExpireIn: '7d', // Example refresh token expiration time
+          accessToken,
+          expiresIn: 3600,
+          tokenType: 'Jwt',
+          authUserState: 'authenticated',
+          refreshToken,
+          refreshTokenExpireIn: 25200,
         });
-      }}}
- catch (error) {
+      } else {
+        res.status(401).json({ message: 'Invalid password' });
+      }
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
     console.error('Error during sign-in:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+app.post('/auth/refresh', async (req, res) => {
+  const refreshToken = req.body.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'Refresh token is missing' });
+  }
+
+  jwt.verify(refreshToken, 'your-refresh-secret-key', async (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid refresh token' });
+    }
+
+    // Check if the user exists in the database
+    const user = await User.findOne({ username: decoded.username });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate a new access token
+    const newAccessToken = jwt.sign(
+      {
+        username: user.username,
+        permission: user.permission,
+      },
+      'your-secret-key',
+      { expiresIn: 27500 }
+    );
+
+    res.json({
+      accessToken: newAccessToken,
+      expiresIn: 27500,
+      tokenType: 'Jwt',
+      authUserState: 'authenticated',
+    });
+  });
+});
+
+
 
 // Sign-out route
 app.post('/auth/signout', async (req, res) => {
