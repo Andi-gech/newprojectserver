@@ -226,9 +226,12 @@ app.post('/auth/signout', async (req, res) => {
 
 
 // Change password route
+// Change password route
 app.post('/auth/changepassword', isAuthenticated, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  const username = req.user;
+  
+  // Extract username from req.user
+  const { username } = req.user;
 
   try {
     // Find the user by username in the database
@@ -258,6 +261,7 @@ app.post('/auth/changepassword', isAuthenticated, async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 app.post('/adddata', isAuthenticated, async (req, res) => {
   const data = req.body;
