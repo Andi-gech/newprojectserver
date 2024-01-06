@@ -320,7 +320,7 @@ app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
-    const data = await collection.findOne({ Zetacode: zetacode });
+    const data = await collection.findOne({ Zetacode: zetacode }, { projection: { _id: 0 } });
 
     console.log(data);
 
@@ -336,6 +336,7 @@ app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 app.post('/getdatabydate', isAuthenticated, async (req, res) => {
   const { date } = req.body;
