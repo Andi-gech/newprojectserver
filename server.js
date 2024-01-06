@@ -133,14 +133,14 @@ app.post('/auth/signin', async (req, res) => {
             permission: user.permission,
           },
           'your-secret-key', // Replace with a secure secret key
-          { expiresIn: 3600 } // Token expiration time
+          { expiresIn: 20 } // Token expiration time
         );
 
         // Generate a refresh token
         const refreshToken = jwt.sign(
           { username: user.username },
           'your-refresh-secret-key', // Replace with a different secure secret key
-          { expiresIn: 25200 } // Refresh token expiration time
+          { expiresIn: 30 } // Refresh token expiration time
         );
 
         res.json({
