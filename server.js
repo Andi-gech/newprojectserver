@@ -145,11 +145,11 @@ app.post('/auth/signin', async (req, res) => {
 
         res.json({
           accessToken,
-          expiresIn: 3600,
+          expiresIn: 20,
           tokenType: 'Jwt',
           authUserState: 'authenticated',
           refreshToken,
-          refreshTokenExpireIn: 25200,
+          refreshTokenExpireIn: 30,
         });
       } else {
         res.status(401).json({ message: 'Invalid password' });
