@@ -774,7 +774,7 @@ app.put('/editUserPermission', isAuthenticated, isAdmin, async (req, res) => {
 
 
 app.get('/fetchUsers', isAuthenticated, async (req, res) => {
-  const loggedInUsername = req.user;
+  const loggedInUsername = req.user.username;
 
   try {
      // Fetch all documents except the one with the same username as the logged-in user
