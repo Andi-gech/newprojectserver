@@ -336,14 +336,20 @@ function buildQuery(queryParams) {
   addRangeQuery('ColdTemperature', 'minColdTemperature', 'maxColdTemperature');
 
   const startDate = new Date(queryParams.startDate);
-  const formattedstartdate = startDate.toISOString().split('T')[0]
   const endDate = new Date(queryParams.endDate);
-  const formattedEndDate = endDate.toISOString().split('T')[0]
+
   if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-    query.Date = { $gte: formattedstartdate, $lte: formattedEndDate };
+    const formattedStartDate = startDate.toISOString().split('T')[0];
+    const formattedEndDate = endDate.toISOString().split('T')[0];
+
+    query.Date = { $gte: formattedStartDate, $lte: formattedEndDate };
+
+    console.log('Formatted Start Date:', formattedStartDate);
+    console.log('Formatted End Date:', formattedEndDate);
+  } else {
+    console.error('Invalid startDate or endDate');
+    // Handle the error, e.g., return an error response
   }
-  console.log(formattedstartdate)
-  console.log(formattedEndDate)
 
   const zetacode = parseInt(queryParams.zetacode);
   if (!isNaN(zetacode)) {
