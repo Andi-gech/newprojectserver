@@ -300,36 +300,11 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
     const db = client.db('database');
     const collection = db.collection('maindatas');
 
-    const query = {};
+    const query = buildQuery(req.query);
 
-    if (req.query.minHotTemperature && req.query.maxHotTemperature) {
-      const minHotTemperature = parseFloat(req.query.minHotTemperature);
-      const maxHotTemperature = parseFloat(req.query.maxHotTemperature);
-
-      if (!isNaN(minHotTemperature) && !isNaN(maxHotTemperature)) {
-        query.HotTemperature = { $gte: minHotTemperature, $lte: maxHotTemperature };
-      }
-    }
-
-    if (req.query.startDate && req.query.endDate) {
-      const startDate = new Date(req.query.startDate);
-      const endDate = new Date(req.query.endDate);
-
-      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-        query.Date = { $gte: startDate, $lte: endDate };
-      }
-    }
-
-    // Add 'Zetacode' search condition
-    if (req.query.zetacode) {
-      const zetacode = parseInt(req.query.zetacode);
-      if (!isNaN(zetacode)) {
-        query.Zetacode = zetacode;
-      }
-    }
     console.log('Query:', query);
 
-    const data = await collection.find(query, { projection: { _id: 0,additionalData:0 } }).toArray();
+    const data = await collection.find(query, { projection: { _id: 0, additionalData: 0 } }).toArray();
 
     client.close();
 
@@ -340,10 +315,39 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
   }
 });
 
+function buildQuery(queryParams) {
+  const query = {};
 
+  function addRangeQuery(field, minKey, maxKey) {
+    const min = parseFloat(queryParams[minKey]);
+    const max = parseFloat(queryParams[maxKey]);
 
+    if (!isNaN(min) && !isNaN(max)) {
+      query[field] = { $gte: min, $lte: max };
+    }
+  }
 
+  addRangeQuery('HotTemperature', 'minHotTemperature', 'maxHotTemperature');
+  addRangeQuery('HotFlow', 'minHotflow', 'maxHotflow');
+  addRangeQuery('ColdFlow', 'minColdFlow', 'maxColdFlow');
+  addRangeQuery('ColdReturn', 'minColdReturn', 'maxColdReturn');
+  addRangeQuery('HotFlushTemperature', 'minHotFlushTemperature', 'maxHotFlushTemperature');
+  addRangeQuery('HotReturn', 'minHotReturn', 'maxHotReturn');
+  addRangeQuery('ColdTemperature', 'minColdTemperature', 'maxColdTemperature');
 
+  const startDate = new Date(queryParams.startDate);
+  const endDate = new Date(queryParams.endDate);
+  if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+    query.Date = { $gte: startDate, $lte: endDate };
+  }
+
+  const zetacode = parseInt(queryParams.zetacode);
+  if (!isNaN(zetacode)) {
+    query.Zetacode = zetacode;
+  }
+
+  return query;
+}
 
 app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
   const zetacode = parseInt(req.params.id, 10); // Parse the 'id' parameter as an integer
