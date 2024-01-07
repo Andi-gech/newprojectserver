@@ -274,11 +274,20 @@ app.post('/adddata', isAuthenticated, async (req, res) => {
     data.username = "name";
 
     // Insert the new document into the collection
-     await new MainData(data);
+      new MainData(data).save(function (err, res) {
+        if(res){
+
+          res.json({ message: 'Data added successfully' });
+        }
+        else{
+          res.status(500).json({ message: 'Internal server error' });
+        }
+
+  })
+  
 
     ;
 
-    res.json({ message: 'Data added successfully' });
   } catch (error) {
     console.error('Error while adding data:', error);
     res.status(500).json({ message: 'Internal server error' });
