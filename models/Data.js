@@ -7,7 +7,7 @@ const mainDataStore = new mongoose.Schema({
   HelpDeskReference: { type: String, required: true },
   IPS: { type: Boolean, required: true },
   Fault: { type: String},
-  Date: { type: DateOnly, required: true },
+  Date: { type: Date, required: true },
   HotTemperature: { type: Number},
   HotFlow: { type: Number},
   HotReturn: { type: Number},
