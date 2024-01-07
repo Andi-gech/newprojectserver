@@ -262,7 +262,7 @@ app.post('/adddata', isAuthenticated, async (req, res) => {
 
   try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
     const existingData = await collection.findOne({ Zetacode: data.Zetacode });
@@ -290,7 +290,7 @@ app.post('/adddata', isAuthenticated, async (req, res) => {
 app.get('/getdata', isAuthenticated, async (req, res) => {
   try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
     const query = buildQuery(req.query);
@@ -361,7 +361,7 @@ app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
 
   try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
     const data = await collection.findOne({ Zetacode: zetacode }, { projection: { _id: 0 } });
@@ -392,7 +392,7 @@ app.post('/getdatabydate', isAuthenticated, async (req, res) => {
 
   try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
     const data = await collection.find({ Date: date }).toArray();
@@ -413,7 +413,7 @@ app.delete('/deletedata', isAuthenticated, async (req, res) => {
   try { 
    
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
     const result = await collection.deleteOne({ Zetacode: zetacode });
@@ -442,7 +442,7 @@ app.delete('/deletedatabydate', isAuthenticated, async (req, res) => {
 
   try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
     const result = await collection.deleteMany({ Date: date });
@@ -470,7 +470,7 @@ app.put('/updatedata', isAuthenticated, async (req, res) => {
 
   try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
     if (newData._id) {
       delete newData._id;
@@ -507,7 +507,7 @@ app.put('/updatedataTable', async (req, res) => {
     }
 
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
     // Specify the query to match all documents (empty query)
@@ -540,7 +540,7 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
     }
 
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
     // Specify the update operation to remove a field
@@ -618,7 +618,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
 
             await client.connect();
 
-            const db = client.db('database');
+            const db = client.db('Mydatabase');
             const collection = db.collection('maindatas');
 
             await collection.insertOne(rowWithUsername);
@@ -786,7 +786,7 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     // Connect to the MongoDB database
     const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
     await client.connect();
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
     // Fetch the collection documents
@@ -824,7 +824,7 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
     // Connect to the MongoDB database
     const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
     await client.connect();
-    const db = client.db('database');
+    const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
     // Fetch the collection documents
