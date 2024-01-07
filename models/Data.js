@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const DateOnly = require('dateonly');
 
 const mainDataStore = new mongoose.Schema({
   Location: { type: String, required: true },
@@ -8,7 +7,7 @@ const mainDataStore = new mongoose.Schema({
   HelpDeskReference: { type: String, required: true },
   IPS: { type: Boolean, required: true },
   Fault: { type: String},
-  Date: { type: DateOnly, required: true,default: () => new DateOnly() },
+  Date: { type: DateOnly, required: true },
   HotTemperature: { type: Number},
   HotFlow: { type: Number},
   HotReturn: { type: Number},
