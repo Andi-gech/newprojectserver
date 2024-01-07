@@ -341,6 +341,7 @@ function buildQuery(queryParams) {
     query.Date = { $gte: startDate, $lte: endDate };
   }
   console.log(startDate)
+  console.log(endDate)
 
   const zetacode = parseInt(queryParams.zetacode);
   if (!isNaN(zetacode)) {
