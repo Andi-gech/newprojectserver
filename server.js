@@ -778,7 +778,7 @@ app.get('/fetchUsers', isAuthenticated, async (req, res) => {
 
   try {
      // Fetch all documents except the one with the same username as the logged-in user
-    const users = await User.find({ username: { $ne: loggedInUsername } }, { username: 1,  });
+    const users = await User.find({ username: { $ne: loggedInUsername } }, { username: 1, permission: 1 });
 
     res.json({ users });
   } catch (error) {
