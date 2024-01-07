@@ -261,12 +261,14 @@ app.post('/adddata', isAuthenticated, async (req, res) => {
  
 
   try {
-    
+    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
+    const db = client.db('Mydatabase');
+    const collection = db.collection('maindatas');
 
-    const existingData = await MainData.findOne({ Zetacode: data.Zetacode });
+    const existingData = await collection.findOne({ Zetacode: data.Zetacode });
 
     if (existingData) {
-      ;
+      client.close();
       return res.status(400).json({ message: 'Zetacode must be unique' });
     }
 
@@ -274,20 +276,11 @@ app.post('/adddata', isAuthenticated, async (req, res) => {
     data.username = "name";
 
     // Insert the new document into the collection
-      new MainData(data).save(function (err, res) {
-        if(res){
+    await collection.insertOne(data);
 
-          res.json({ message: 'Data added successfully' });
-        }
-        else{
-          res.status(500).json({ message: 'Internal server error' });
-        }
+    client.close();
 
-  })
-  
-
-    ;
-
+    res.json({ message: 'Data added successfully' });
   } catch (error) {
     console.error('Error while adding data:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -304,9 +297,9 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
 
     console.log('Query:', query);
 
-    const data = await MainData.find(query, { projection: { _id: 0, additionalData: 0 } });
+    const data = await collection.find(query, { projection: { _id: 0, additionalData: 0 } }).toArray();
 
-    ;
+    client.close();
 
     res.json(data);
   } catch (error) {
@@ -371,11 +364,11 @@ app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
     const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
-    const data = await MainData.findOne({ Zetacode: zetacode }, { projection: { _id: 0 } });
+    const data = await collection.findOne({ Zetacode: zetacode }, { projection: { _id: 0 } });
 
     console.log(data);
 
-    ;
+    client.close();
 
     if (data) {
       return res.json({ data: data });
@@ -402,9 +395,9 @@ app.post('/getdatabydate', isAuthenticated, async (req, res) => {
     const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
-    const data = await MainData.find({ Date: date });
+    const data = await collection.find({ Date: date }).toArray();
 
-    ;
+    client.close();
 
     res.json(data);
     } catch (error) {
@@ -423,11 +416,11 @@ app.delete('/deletedata', isAuthenticated, async (req, res) => {
     const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
-    const result = await MainData.deleteOne({ Zetacode: zetacode });
+    const result = await collection.deleteOne({ Zetacode: zetacode });
     console.log(result);
 
 
-    ;
+    client.close();
 
     if (result.deletedCount === 1) {
       res.json({ message: 'Data deleted successfully' });
@@ -452,9 +445,9 @@ app.delete('/deletedatabydate', isAuthenticated, async (req, res) => {
     const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
-    const result = await MainData.deleteMany({ Date: date });
+    const result = await collection.deleteMany({ Date: date });
 
-    ;
+    client.close();
 
     if (result.deletedCount > 0) {
       res.json({ message: `${result.deletedCount} data(s) deleted successfully` });
@@ -483,9 +476,9 @@ app.put('/updatedata', isAuthenticated, async (req, res) => {
       delete newData._id;
     }
 
-    const result = await MainData.updateOne({ Zetacode: zetacode }, { $set: newData });
+    const result = await collection.updateOne({ Zetacode: zetacode }, { $set: newData });
 
-    ;
+    client.close();
 
     if (result.matchedCount === 1) {
       res.json({ message: 'Data updated successfully' });
@@ -524,9 +517,9 @@ app.put('/updatedataTable', async (req, res) => {
     const updateOperation = { $set: newFielddata };
 
     // Update all documents in the collection
-    const result = await MainData.updateMany(query, updateOperation);
+    const result = await collection.updateMany(query, updateOperation);
 
-    ;
+    client.close();
 
     if (result) {
       res.json({ message: 'Data updated successfully' });
@@ -546,15 +539,17 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
       return res.status(400).json({ message: 'Invalid request. columnName is null or undefined.' });
     }
 
-    
+    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
+    const db = client.db('Mydatabase');
+    const collection = db.collection('maindatas');
 
     // Specify the update operation to remove a field
     const updateOperation = { $unset: { [columnName]: 1 } };
 
     // Update all documents in the collection
-    const result = await MainData.updateMany({}, updateOperation);
+    const result = await collection.updateMany({}, updateOperation);
 
-    ;
+    client.close();
 
     if (result.modifiedCount > 0) {
       res.json({ message: `Column '${columnName}' deleted successfully` });
@@ -579,7 +574,6 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     }
 
     const fileBuffer = req.file.buffer;
-    
 
     console.log('File Buffer Content:', fileBuffer.toString());
 
@@ -620,9 +614,14 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
               ThermalFlush: data.ThermalFlush,
                };
 
-            
+            client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
 
-            await MainData.insertOne(rowWithUsername);
+            await client.connect();
+
+            const db = client.db('Mydatabase');
+            const collection = db.collection('maindatas');
+
+            await collection.insertOne(rowWithUsername);
 
             console.log('Data inserted successfully');
 
@@ -678,7 +677,9 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     console.error('Error while importing CSV:', error);
     res.status(500).json({ message: 'Internal server error' });
   } finally {
-   console.log('error')
+    if (client) {
+      await client.close();
+    }
   }
 });
 
@@ -783,10 +784,13 @@ app.get('/fetchUsers', isAuthenticated, async (req, res) => {
 app.get('/generateCSV', isAuthenticated, async (req, res) => {
   try {
     // Connect to the MongoDB database
-    
+    const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
+    await client.connect();
+    const db = client.db('Mydatabase');
+    const collection = db.collection('maindatas');
 
     // Fetch the collection documents
-    const data = await MainData.find({});
+    const data = await collection.find({}).toArray();
 
     // Set response headers for file download
     res.setHeader('Content-Disposition', 'attachment; filename=output.csv');
@@ -804,7 +808,8 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     // End the stream to finish the response
     csvStream.end();
 
-   
+    // Close the MongoDB connection
+    await client.close();
   } catch (error) {
     console.error('Error while generating CSV file:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -817,13 +822,16 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
 app.get('/generateExcel', isAuthenticated, async (req, res) => {
   try {
     // Connect to the MongoDB database
-    
+    const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
+    await client.connect();
+    const db = client.db('Mydatabase');
+    const collection = db.collection('maindatas');
 
     // Fetch the collection documents
-    const data = await MainData.find();
+    const data = await collection.find().toArray();
 
     // Close the MongoDB connection
-    
+    await client.close();
 
     // Check if any data was found
     if (data.length === 0) {
