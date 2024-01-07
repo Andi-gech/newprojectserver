@@ -685,7 +685,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
 
 
 
-app.post('/createUser', isAuthenticated, isAdmin, async (req, res) => {
+app.post('/createUser', isAuthenticated, async (req, res) => {
   const { username, password, permission } = req.body;
 
   try {
