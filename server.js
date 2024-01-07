@@ -72,7 +72,7 @@ const isAuthenticated = (req, res, next) => {
 
   try {
     // Verify the JWT token
-    const decoded = jwt.verify(token, 'your-secret-key');
+    const decoded = jwt.verify(token, '1q2w3e4r5t');
 
     // Attach user information to the request object
     req.user = decoded;
@@ -122,34 +122,34 @@ app.post('/auth/signin', async (req, res) => {
     const user = await User.findOne({ username });
 
     if (user) {
-      // Compare the provided password with the stored bcrypt hash
+    
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (isMatch) {
-        // Generate an access token with the user's information
+      
         const accessToken = jwt.sign(
           {
             username: user.username,
             permission: user.permission,
           },
-          'your-secret-key', // Replace with a secure secret key
-          { expiresIn: 7200 } // Token expiration time
+          '1q2w3e4r5t', 
+          { expiresIn: 1 } 
         );
 
         // Generate a refresh token
         const refreshToken = jwt.sign(
           { username: user.username },
-          'your-refresh-secret-key', // Replace with a different secure secret key
-          { expiresIn: 432000 } // Refresh token expiration time
+          'your-refresh-secret-key', 
+          { expiresIn: 1 } 
         );
 
         res.json({
           accessToken,
-          expiresIn: 7200,
+          expiresIn: 1,
           tokenType: 'Jwt',
           authUserState: 'authenticated',
           refreshToken,
-          refreshTokenExpireIn: 431000,
+          refreshTokenExpireIn: 1,
         });
       } else {
         res.status(401).json({ message: 'Invalid password' });
@@ -187,13 +187,13 @@ app.post('/auth/refresh', async (req, res) => {
         username: user.username,
         permission: user.permission,
       },
-      'your-secret-key',
-      { expiresIn: 7200 }
+      '1q2w3e4r5t',
+      { expiresIn: 1 }
     );
 
     res.json({
       accessToken: newAccessToken,
-      expiresIn: 7200,
+      expiresIn: 1,
       tokenType: 'Jwt',
       authUserState: 'authenticated',
     });
@@ -340,6 +340,7 @@ function buildQuery(queryParams) {
   if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
     query.Date = { $gte: startDate, $lte: endDate };
   }
+  console.log(startDate)
 
   const zetacode = parseInt(queryParams.zetacode);
   if (!isNaN(zetacode)) {
