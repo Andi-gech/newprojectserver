@@ -274,7 +274,7 @@ app.post('/adddata', isAuthenticated, async (req, res) => {
     data.username = "name";
 
     // Insert the new document into the collection
-    await MainData.insertOne(data);
+     await new MainData(data);
 
     ;
 
@@ -570,6 +570,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
     }
 
     const fileBuffer = req.file.buffer;
+    
 
     console.log('File Buffer Content:', fileBuffer.toString());
 
