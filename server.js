@@ -133,23 +133,23 @@ app.post('/auth/signin', async (req, res) => {
             permission: user.permission,
           },
           '1q2w3e4r5t', 
-          { expiresIn: 1 } 
+          { expiresIn: 86400 } 
         );
 
         // Generate a refresh token
         const refreshToken = jwt.sign(
           { username: user.username },
           'your-refresh-secret-key', 
-          { expiresIn: 1 } 
+          { expiresIn: 432000 } 
         );
 
         res.json({
           accessToken,
-          expiresIn: 1,
+          expiresIn: 86400,
           tokenType: 'Jwt',
           authUserState: 'authenticated',
           refreshToken,
-          refreshTokenExpireIn: 1,
+          refreshTokenExpireIn: 432000,
         });
       } else {
         res.status(401).json({ message: 'Invalid password' });
@@ -188,12 +188,12 @@ app.post('/auth/refresh', async (req, res) => {
         permission: user.permission,
       },
       '1q2w3e4r5t',
-      { expiresIn: 1 }
+      { expiresIn: 86400 }
     );
 
     res.json({
       accessToken: newAccessToken,
-      expiresIn: 1,
+      expiresIn: 86400,
       tokenType: 'Jwt',
       authUserState: 'authenticated',
     });
