@@ -737,11 +737,11 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
           } catch (error) {
             if (error instanceof MongoError && error.code === 11000) {
               console.error('Duplicate key error:', error);
-              responseDetails.errors.push({ _id: data.HelpDeskReference, message: 'Duplicate key error: Some records already exist in the database.', error });
+              responseDetails.errors.push({ _id: data._id, message: 'Duplicate key error: Some records already exist in the database.', error });
               errorCount++;
             } else {
               console.error('Error inserting data:', error);
-              responseDetails.errors.push({ _id: data.HelpDeskReference, message: 'Internal server error: Failed to insert the record into the database.', error });
+              responseDetails.errors.push({ _id: data._id, message: 'Internal server error: Failed to insert the record into the database.', error });
               errorCount++;
               reject(error);
             }
