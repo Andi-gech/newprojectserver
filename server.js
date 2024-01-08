@@ -286,7 +286,7 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
 
     console.log('Query:', query);
 
-    const data = await collection.find(query, { projection: { _id: 0, additionalData: 0 } }).toArray();
+    const data = await collection.find(query, { projection: {  additionalData: 0 } }).toArray();
 
     client.close();
 
