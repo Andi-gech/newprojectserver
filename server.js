@@ -308,6 +308,109 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
   }
 });
 
+app.get('/generateCSV', isAuthenticated, async (req, res) => {
+  try {
+    // Connect to the MongoDB database
+    const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
+    await client.connect();
+    const db = client.db('Mydatabase');
+    const collection = db.collection('maindatas');
+    const query = buildQuery(req.query);
+
+    // Fetch the collection documents
+    const data = await collection.find(query,{}).toArray();
+
+    // Collect unique headers from all rows
+    const uniqueHeadersSet = new Set();
+    data.forEach(row => {
+      Object.keys(row).forEach(key => uniqueHeadersSet.add(key));
+    });
+
+    const uniqueHeaders = Array.from(uniqueHeadersSet);
+
+    // Set response headers for file download
+    res.setHeader('Content-Disposition', 'attachment; filename=output.csv');
+    res.setHeader('Content-Type', 'text/csv');
+
+    // Create a writable stream to store CSV data in memory
+    const csvStream = fastcsv.format({ headers: true });
+
+    // Pipe the CSV data to the response with the unique headers
+    csvStream.pipe(res);
+    csvStream.write(uniqueHeaders); // Write the header row
+
+    // Write the data rows to the CSV stream
+    data.forEach(item => {
+      const rowData = uniqueHeaders.map(header => item[header]);
+      csvStream.write(rowData);
+    });
+
+    // End the stream to finish the response
+    csvStream.end();
+
+    // Close the MongoDB connection
+    await client.close();
+  } catch (error) {
+    console.error('Error while generating CSV file:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+app.get('/generateExcel', isAuthenticated, async (req, res) => {
+  try {
+    // Connect to the MongoDB database
+    const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
+    await client.connect();
+    const db = client.db('Mydatabase');
+    const collection = db.collection('maindatas');
+    const query = buildQuery(req.query);
+
+    // Fetch the collection documents
+    const data = await collection.find(query,{}).toArray();
+
+    // Close the MongoDB connection
+    await client.close();
+
+    // Check if any data was found
+    if (data.length === 0) {
+      return res.status(404).json({ message: 'No data found' });
+    }
+
+    // Create a new Excel workbook and worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Data');
+
+    // Collect unique headers from all rows
+    const uniqueHeadersSet = new Set();
+    data.forEach(row => {
+      Object.keys(row).forEach(key => uniqueHeadersSet.add(key));
+    });
+
+    const uniqueHeaders = Array.from(uniqueHeadersSet);
+
+    // Add unique headers to the worksheet
+    worksheet.addRow(uniqueHeaders);
+
+    // Add data rows to the worksheet
+    data.forEach(row => {
+      const rowData = uniqueHeaders.map(header => row[header]);
+      worksheet.addRow(rowData);
+    });
+
+    // Generate a unique filename for the Excel file
+    const excelBuffer = await workbook.xlsx.writeBuffer();
+
+    // Set response headers for file download
+    res.setHeader('Content-Disposition', 'attachment; filename=output.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    // Send the in-memory Excel data to the client
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('Error while generating Excel file:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 function buildQuery(queryParams) {
   const query = {};
 
@@ -781,109 +884,3 @@ app.get('/fetchUsers', isAuthenticated, async (req, res) => {
 });
 
 
-app.get('/generateCSV', isAuthenticated, async (req, res) => {
-  try {
-    // Connect to the MongoDB database
-    const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
-    await client.connect();
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
-
-    // Fetch the collection documents
-    const data = await collection.find({}).toArray();
-
-    // Collect unique headers from all rows
-    const uniqueHeadersSet = new Set();
-    data.forEach(row => {
-      Object.keys(row).forEach(key => uniqueHeadersSet.add(key));
-    });
-
-    const uniqueHeaders = Array.from(uniqueHeadersSet);
-
-    // Set response headers for file download
-    res.setHeader('Content-Disposition', 'attachment; filename=output.csv');
-    res.setHeader('Content-Type', 'text/csv');
-
-    // Create a writable stream to store CSV data in memory
-    const csvStream = fastcsv.format({ headers: true });
-
-    // Pipe the CSV data to the response with the unique headers
-    csvStream.pipe(res);
-    csvStream.write(uniqueHeaders); // Write the header row
-
-    // Write the data rows to the CSV stream
-    data.forEach(item => {
-      const rowData = uniqueHeaders.map(header => item[header]);
-      csvStream.write(rowData);
-    });
-
-    // End the stream to finish the response
-    csvStream.end();
-
-    // Close the MongoDB connection
-    await client.close();
-  } catch (error) {
-    console.error('Error while generating CSV file:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-
-
-
-
-
-app.get('/generateExcel', isAuthenticated, async (req, res) => {
-  try {
-    // Connect to the MongoDB database
-    const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
-    await client.connect();
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
-
-    // Fetch the collection documents
-    const data = await collection.find().toArray();
-
-    // Close the MongoDB connection
-    await client.close();
-
-    // Check if any data was found
-    if (data.length === 0) {
-      return res.status(404).json({ message: 'No data found' });
-    }
-
-    // Create a new Excel workbook and worksheet
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Data');
-
-    // Collect unique headers from all rows
-    const uniqueHeadersSet = new Set();
-    data.forEach(row => {
-      Object.keys(row).forEach(key => uniqueHeadersSet.add(key));
-    });
-
-    const uniqueHeaders = Array.from(uniqueHeadersSet);
-
-    // Add unique headers to the worksheet
-    worksheet.addRow(uniqueHeaders);
-
-    // Add data rows to the worksheet
-    data.forEach(row => {
-      const rowData = uniqueHeaders.map(header => row[header]);
-      worksheet.addRow(rowData);
-    });
-
-    // Generate a unique filename for the Excel file
-    const excelBuffer = await workbook.xlsx.writeBuffer();
-
-    // Set response headers for file download
-    res.setHeader('Content-Disposition', 'attachment; filename=output.xlsx');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-
-    // Send the in-memory Excel data to the client
-    res.send(excelBuffer);
-  } catch (error) {
-    console.error('Error while generating Excel file:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
