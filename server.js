@@ -668,6 +668,10 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
   let client;
   let successCount = 0;
   let errorCount = 0;
+  let responseDetails = {
+    success: [],
+    errors: [],
+  };
 
   try {
     console.log('Entered route');
@@ -715,7 +719,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
               PreflushSampleTaken: data.PreflushSampleTaken === 'true',
               PostflushSampleTaken: data.PostflushSampleTaken === 'true',
               ThermalFlush: data.ThermalFlush,
-               };
+            };
 
             client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
 
@@ -729,14 +733,15 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
             console.log('Data inserted successfully');
 
             successCount++;
+            responseDetails.success.push({ _id: data.HelpDeskReference, message: 'Record inserted successfully' });
           } catch (error) {
             if (error instanceof MongoError && error.code === 11000) {
               console.error('Duplicate key error:', error);
-              // Handle duplicate key error
-              // You can send a specific response or take appropriate action
+              responseDetails.errors.push({ _id: data.HelpDeskReference, message: 'Duplicate key error: Some records already exist in the database.', error });
               errorCount++;
             } else {
               console.error('Error inserting data:', error);
+              responseDetails.errors.push({ _id: data.HelpDeskReference, message: 'Internal server error: Failed to insert the record into the database.', error });
               errorCount++;
               reject(error);
             }
@@ -754,6 +759,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
         })
         .on('error', (error) => {
           console.error('CSV processing error:', error);
+          responseDetails.errors.push({ _id: null, message: 'Error processing CSV', error });
           res.status(400).json({ message: 'Error processing CSV', error });
           reject(error);
         })
@@ -773,6 +779,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
       message: 'CSV data imported successfully',
       successCount,
       errorCount,
+      details: responseDetails,
     });
 
     console.log('Route execution completed');
