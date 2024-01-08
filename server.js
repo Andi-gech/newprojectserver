@@ -792,6 +792,14 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     // Fetch the collection documents
     const data = await collection.find({}).toArray();
 
+    // Collect unique headers from all rows
+    const uniqueHeadersSet = new Set();
+    data.forEach(row => {
+      Object.keys(row).forEach(key => uniqueHeadersSet.add(key));
+    });
+
+    const uniqueHeaders = Array.from(uniqueHeadersSet);
+
     // Set response headers for file download
     res.setHeader('Content-Disposition', 'attachment; filename=output.csv');
     res.setHeader('Content-Type', 'text/csv');
@@ -799,11 +807,15 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     // Create a writable stream to store CSV data in memory
     const csvStream = fastcsv.format({ headers: true });
 
-    // Pipe the CSV data to the response
+    // Pipe the CSV data to the response with the unique headers
     csvStream.pipe(res);
+    csvStream.write(uniqueHeaders); // Write the header row
 
-    // Write the data to the CSV stream
-    data.forEach(item => csvStream.write(item));
+    // Write the data rows to the CSV stream
+    data.forEach(item => {
+      const rowData = uniqueHeaders.map(header => item[header]);
+      csvStream.write(rowData);
+    });
 
     // End the stream to finish the response
     csvStream.end();
@@ -815,6 +827,8 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+
 
 
 
@@ -842,12 +856,22 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Data');
 
-    // Add headers to the worksheet
-    const headers = Object.keys(data[0]);
-    worksheet.addRow(headers);
+    // Collect unique headers from all rows
+    const uniqueHeadersSet = new Set();
+    data.forEach(row => {
+      Object.keys(row).forEach(key => uniqueHeadersSet.add(key));
+    });
+
+    const uniqueHeaders = Array.from(uniqueHeadersSet);
+
+    // Add unique headers to the worksheet
+    worksheet.addRow(uniqueHeaders);
 
     // Add data rows to the worksheet
-    data.forEach(row => worksheet.addRow(Object.values(row)));
+    data.forEach(row => {
+      const rowData = uniqueHeaders.map(header => row[header]);
+      worksheet.addRow(rowData);
+    });
 
     // Generate a unique filename for the Excel file
     const excelBuffer = await workbook.xlsx.writeBuffer();
