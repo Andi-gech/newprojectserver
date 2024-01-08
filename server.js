@@ -258,24 +258,13 @@ app.post('/auth/changepassword', isAuthenticated, async (req, res) => {
 
 app.post('/adddata', isAuthenticated, async (req, res) => {
   const data = req.body;
- 
 
   try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
     const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
-    const existingData = await collection.findOne({ Zetacode: data.Zetacode });
-
-    if (existingData) {
-      client.close();
-      return res.status(400).json({ message: 'Zetacode must be unique' });
-    }
-
-    // Add the username field to the data object
-    data.username = "name";
-
-    // Insert the new document into the collection
+    
     await collection.insertOne(data);
 
     client.close();
@@ -318,7 +307,8 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     const query = buildQuery(req.query);
 
     // Fetch the collection documents
-    const data = await collection.find(query,{}).toArray();
+    const data = await collection.find(query, { projection: { _id: 0 } }).toArray();
+
 
     // Collect unique headers from all rows
     const uniqueHeadersSet = new Set();
@@ -365,7 +355,8 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
     const query = buildQuery(req.query);
 
     // Fetch the collection documents
-    const data = await collection.find(query,{}).toArray();
+    const data = await collection.find(query, { projection: { _id: 0 } }).toArray();
+
 
     // Close the MongoDB connection
     await client.close();
@@ -456,10 +447,10 @@ function buildQuery(queryParams) {
 }
 
 app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
-  const zetacode = parseInt(req.params.id, 10); // Parse the 'id' parameter as an integer
+  const documentId = req.params.id;
 
-  if (isNaN(zetacode)) {
-    return res.status(400).json({ message: 'Zetacode must be a valid number' });
+  if (!ObjectId.isValid(documentId)) {
+    return res.status(400).json({ message: 'Invalid document ID' });
   }
 
   try {
@@ -467,7 +458,7 @@ app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
     const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
-    const data = await collection.findOne({ Zetacode: zetacode }, { projection: { _id: 0 } });
+    const data = await collection.findOne({ _id: new ObjectId(documentId) }, { projection: { _id: 0 } });
 
     console.log(data);
 
@@ -510,18 +501,19 @@ app.post('/getdatabydate', isAuthenticated, async (req, res) => {
 });
 
 app.delete('/deletedata', isAuthenticated, async (req, res) => {
- 
-  const { zetacode } = req.body;
- 
-  try { 
-   
+  const { id } = req.body;
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid document ID' });
+  }
+
+  try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
     const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
 
-    const result = await collection.deleteOne({ Zetacode: zetacode });
+    const result = await collection.deleteOne({ _id: new ObjectId(id) });
     console.log(result);
-
 
     client.close();
 
@@ -536,50 +528,55 @@ app.delete('/deletedata', isAuthenticated, async (req, res) => {
   }
 });
 
-app.delete('/deletedatabydate', isAuthenticated, async (req, res) => {
-  const { date } = req.body;
+// app.delete('/deletedatabydate', isAuthenticated, async (req, res) => {
+//   const { date } = req.body;
 
-  if (!date) {
-    return res.status(400).json({ message: 'Date not provided in the request body' });
-  }
+//   if (!date) {
+//     return res.status(400).json({ message: 'Date not provided in the request body' });
+//   }
 
-  try {
-    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+//   try {
+//     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
+//     const db = client.db('Mydatabase');
+//     const collection = db.collection('maindatas');
 
-    const result = await collection.deleteMany({ Date: date });
+//     const result = await collection.deleteMany({ Date: date });
 
-    client.close();
+//     client.close();
 
-    if (result.deletedCount > 0) {
-      res.json({ message: `${result.deletedCount} data(s) deleted successfully` });
-    } else {
-      res.status(404).json({ message: 'No data found' });
-    }
-  } catch (error) {
-    console.error('Error while deleting data:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
+//     if (result.deletedCount > 0) {
+//       res.json({ message: `${result.deletedCount} data(s) deleted successfully` });
+//     } else {
+//       res.status(404).json({ message: 'No data found' });
+//     }
+//   } catch (error) {
+//     console.error('Error while deleting data:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
 
 app.put('/updatedata', isAuthenticated, async (req, res) => {
-  
-  const { zetacode, newData } = req.body;
+  const { id, newData } = req.body;
 
-  if (!zetacode || !newData) {
-    return res.status(400).json({ message: 'Zetacode or new data not provided in the request body' });
+  if (!id || !newData) {
+    return res.status(400).json({ message: 'ID or new data not provided in the request body' });
+  }
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid document ID' });
   }
 
   try {
     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
     const db = client.db('Mydatabase');
     const collection = db.collection('maindatas');
+    const query = { _id: new ObjectId(id) };
+    
     if (newData._id) {
       delete newData._id;
     }
 
-    const result = await collection.updateOne({ Zetacode: zetacode }, { $set: newData });
+    const result = await collection.updateOne(query, { $set: newData });
 
     client.close();
 
@@ -595,6 +592,7 @@ app.put('/updatedata', isAuthenticated, async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 app.put('/updatedataTable', async (req, res) => {
   const newFielddata  = req.body.newFielddata;
 

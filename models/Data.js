@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const mainDataStore = new mongoose.Schema({
   Location: { type: String, required: true },
-  Zetacode: { type: Number, required: true, unique: true },
+  Zetacode: { type: Number, required: true, },
   Room: { type: String, required: true },
   HelpDeskReference: { type: String, required: true },
   IPS: { type: Boolean, required: true },
