@@ -933,7 +933,7 @@ app.put('/updateUserPermissions/:id', isAuthenticated, async (req, res) => {
     // Update user permissions in the database
     const updatedUser = await User.findOneAndUpdate(
       { _id: new ObjectId(userId) },
-      { $set: { permissions: newPermissions } },
+      { $set: { permission: newPermissions } },
       { new: true, projection: { password: 0 } }
     );
 
