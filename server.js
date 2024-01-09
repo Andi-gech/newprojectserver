@@ -893,4 +893,52 @@ app.get('/fetchUsers', isAuthenticated, async (req, res) => {
   }
 });
 
+app.get('/getUser/:id', isAuthenticated, async (req, res) => {
+  const userId = req.params.id;
 
+  try {
+    // Check if the provided ID is a valid ObjectId
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    // Find the user by _id in the database
+    const user = await User.findOne({ _id: new ObjectId(userId) }, { password: 0 });
+
+    if (user) {
+      res.json({ user });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error('Error while retrieving user by ID:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+app.put('/updateUserPermissions/:id', isAuthenticated, async (req, res) => {
+  const userId = req.params.id;
+  const newPermissions = req.body.permissions; // Assuming permissions are sent in the request body
+
+  try {
+    // Check if the provided ID is a valid ObjectId
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    // Update user permissions in the database
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: new ObjectId(userId) },
+      { $set: { permissions: newPermissions } },
+      { new: true, projection: { password: 0 } }
+    );
+
+    if (updatedUser) {
+      res.json({ user: updatedUser });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error('Error while updating user permissions:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
