@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  permission: { type: String,default:"editor" },
+  permission: { type: String,default:"editor",required:true },
   session: {
     sessionId: { type: String },
     expiresAt: { type: Date },
