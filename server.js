@@ -141,6 +141,8 @@ app.post('/auth/signin', async (req, res) => {
           expiresIn: 86400,
           tokenType: 'Jwt',
           authUserState: 'authenticated',
+          username: user.username,
+          permission: user.permission,
           refreshToken,
           refreshTokenExpireIn: 432000,
         });
