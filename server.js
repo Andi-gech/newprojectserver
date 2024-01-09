@@ -917,12 +917,17 @@ app.get('/getUser/:id', isAuthenticated, async (req, res) => {
 });
 app.put('/updateUserPermissions/:id', isAuthenticated, async (req, res) => {
   const userId = req.params.id;
-  const newPermissions = req.body.permissions; // Assuming permissions are sent in the request body
+  const newPermissions = req.body.permissions;
 
   try {
     // Check if the provided ID is a valid ObjectId
     if (!ObjectId.isValid(userId)) {
       return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    // Check if newPermissions is provided
+    if (!newPermissions) {
+      return res.status(400).json({ message: 'New permissions are required for the update' });
     }
 
     // Update user permissions in the database
