@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 
 // Define the user schema
+const allowedPermissions = ['editor', 'viewer', 'admin'];
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  permission: { type: String,default:"editor",required:true },
+  permission: { type: String, enum: allowedPermissions,default:"viewer",required:true },
   session: {
     sessionId: { type: String },
     expiresAt: { type: Date },
