@@ -290,9 +290,13 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
 
     const data = await collection.find(query, { projection: {  additionalData: 0 } }).toArray();
 
-    client.close();
 
-    res.json(data);
+    client.close();
+ const formattedData = data.map(item => {
+      const formattedDate = item.Date ? item.Date.toISOString().split('T')[0] : null;
+      return { ...item, Date: formattedDate };
+    });
+    res.json(formattedData);
   } catch (error) {
     console.error('Error while retrieving data:', error);
     res.status(500).json({ message: 'Internal server error' });
