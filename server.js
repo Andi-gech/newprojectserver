@@ -698,7 +698,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
 
             const username = req.user.username;
             const receivedDate = new Date(data.Date);
-            const formattedDate = receivedDate.toISOString().split('T')[0]; // Extracting the date part
+            // const formattedDate = receivedDate?.toISOString().split('T')[0]; // Extracting the date part
 
 
             const rowWithUsername = {
@@ -708,7 +708,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
               HelpDeskReference: data.HelpDeskReference,
               IPS: data.IPS === 'true',
               Fault: data.Fault,
-              Date: formattedDate,
+              Date: receivedDate,
               HotTemperature: parseFloat(data.HotTemperature),
               HotFlow: parseFloat(data.HotFlow),
               HotReturn: parseFloat(data.HotReturn),
