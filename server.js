@@ -664,14 +664,27 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority&ssl=true', { useUnifiedTopology: true });
+
+// Connect to the database when the application starts
+client.connect()
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch((error) => {
+    console.error('Error connecting to MongoDB:', error);
+    process.exit(1);
+  });
+
 app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) => {
-  let client;
   let successCount = 0;
   let errorCount = 0;
   let responseDetails = {
     success: [],
     errors: [],
   };
+  let processedCount = 0;
+  let totalRecords = 0;
 
   try {
     console.log('Entered route');
@@ -680,16 +693,17 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
       return res.status(400).json({ message: 'No file uploaded or file buffer is empty' });
     }
 
+    const db = client.db('Mydatabase');
+    const collection = db.collection('maindatas');
     const fileBuffer = req.file.buffer;
 
     console.log('File Buffer Content:', fileBuffer.toString());
 
     const readableStream = stream.Readable.from(fileBuffer.toString());
 
-    await new Promise(async (resolve, reject) => {
-      let processedCount = 0;
-      let totalRecords = 0;
+    const bulkOps = [];
 
+    await new Promise(async (resolve, reject) => {
       readableStream
         .pipe(csv())
         .on('data', async (data) => {
@@ -698,8 +712,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
 
             const username = req.user.username;
             const receivedDate = new Date(data.Date);
-            // const formattedDate = receivedDate?.toISOString().split('T')[0]; // Extracting the date part
-
+            // const formattedDate = receivedDate?.toISOString().split('T')[0];
 
             const rowWithUsername = {
               Location: data.Location,
@@ -724,16 +737,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
               ThermalFlush: data.ThermalFlush,
             };
 
-            client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
-
-            await client.connect();
-
-            const db = client.db('Mydatabase');
-            const collection = db.collection('maindatas');
-
-            await collection.insertOne(rowWithUsername);
-
-            console.log('Data inserted successfully');
+            bulkOps.push({ insertOne: { document: rowWithUsername } });
 
             successCount++;
             responseDetails.success.push({ _id: data.HelpDeskReference, message: 'Record inserted successfully' });
@@ -748,17 +752,21 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
               errorCount++;
               reject(error);
             }
-          } finally {
-            processedCount++;
-
-            // Check if all records have been processed
-            if (processedCount === totalRecords) {
-              resolve();
-            }
           }
         })
         .on('end', () => {
-          // Response will be sent in the 'resolve' block
+          // After processing all records, perform the bulk insert
+          if (bulkOps.length > 0) {
+            collection.bulkWrite(bulkOps)
+              .then(() => {
+                resolve();
+              })
+              .catch((error) => {
+                reject(error);
+              });
+          } else {
+            resolve();
+          }
         })
         .on('error', (error) => {
           console.error('CSV processing error:', error);
@@ -767,9 +775,11 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
           reject(error);
         })
         .on('data', () => {
+          // Count the total number of records
           totalRecords++;
         })
         .on('end', () => {
+          // If no records found in the CSV file
           if (totalRecords === 0) {
             res.status(400).json({ message: 'No records found in the CSV file' });
             reject('No records found in the CSV file');
@@ -789,10 +799,6 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
   } catch (error) {
     console.error('Error while importing CSV:', error);
     res.status(500).json({ message: 'Internal server error' });
-  } finally {
-    if (client) {
-      await client.close();
-    }
   }
 });
 

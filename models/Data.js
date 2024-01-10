@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 
 const mainDataStore = new mongoose.Schema({
-  Location: { type: String, required: true },
-  Zetacode: { type: Number, required: true, },
-  Room: { type: String, required: true },
-  HelpDeskReference: { type: String, required: true },
-  IPS: { type: Boolean, required: true },
+  Location: { type: String},
+  Zetacode: { type: Number },
+  Room: { type: String},
+  HelpDeskReference: { type: String},
+  IPS: { type: Boolean },
   Fault: { type: String},
-  Date: { type: Date, required: true },
+  Date: { type: Date },
   HotTemperature: { type: Number},
   HotFlow: { type: Number},
   HotReturn: { type: Number},
