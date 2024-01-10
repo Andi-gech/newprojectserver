@@ -290,13 +290,9 @@ app.get('/getdata', isAuthenticated, async (req, res) => {
 
     const data = await collection.find(query, { projection: {  additionalData: 0 } }).toArray();
 
-
     client.close();
- const formattedData = data.map(item => {
-      const formattedDate = item.Date ? item.Date.toISOString().split('T')[0] : null;
-      return { ...item, Date: formattedDate };
-    });
-    res.json(formattedData);
+
+    res.json(data);
   } catch (error) {
     console.error('Error while retrieving data:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -715,7 +711,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
             console.log('Processing data:', data);
 
             const username = req.user.username;
-            const receivedDate = new Date(data.Date);
+            // const receivedDate = new Date(data.Date);
             // const formattedDate = receivedDate?.toISOString().split('T')[0];
 
             const rowWithUsername = {
@@ -725,7 +721,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
               HelpDeskReference: data.HelpDeskReference,
               IPS: data.IPS === 'true',
               Fault: data.Fault,
-              Date: receivedDate,
+              Date: data.Date,
               HotTemperature: parseFloat(data.HotTemperature),
               HotFlow: parseFloat(data.HotFlow),
               HotReturn: parseFloat(data.HotReturn),
