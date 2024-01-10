@@ -715,6 +715,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
             // const formattedDate = receivedDate?.toISOString().split('T')[0];
 
             const rowWithUsername = {
+              ...data,
               Location: data.Location,
               Zetacode: parseInt(data.Zetacode),
               Room: data.Room,
