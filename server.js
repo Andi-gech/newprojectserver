@@ -440,7 +440,7 @@ function buildQuery(queryParams) {
   addRangeQuery("ColdTemperature", "minColdTemperature", "maxColdTemperature");
 
   const startDate = moment(queryParams.startDate, 'M/D/YYYY').toDate()
-  const endDate = (queryParams.endDate, 'M/D/YYYY').toDate()
+  const endDate = moment(queryParams.endDate, 'M/D/YYYY').toDate()
 
   if (!isNaN(startDate) && !isNaN(endDate)) {
     // const formattedStartDate = startDate.toISOString().split('T')[0];
