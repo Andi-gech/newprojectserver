@@ -290,9 +290,18 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
       .find(query, { projection: { additionalData: 0 } })
       .toArray();
 
+    // Format the date in the response
+    const formattedData = data.map(item => {
+      return {
+        ...item,
+        Date: item.Date ? moment(item.Date).format('YYYY-MM-DD') : null,
+        // Add other fields as needed
+      };
+    });
+
     client.close();
 
-    res.json(data);
+    res.json(formattedData);
   } catch (error) {
     console.error("Error while retrieving data:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -315,10 +324,18 @@ app.get("/generateCSV", isAuthenticated, async (req, res) => {
     const data = await collection
       .find(query, { projection: { _id: 0 } })
       .toArray();
+    const formattedData = data.map(item => {
+        return {
+          ...item,
+          Date: item.Date ? moment(item.Date).format('YYYY-MM-DD') : null,
+          // Add other fields as needed
+        };
+      });
+  
 
     // Collect unique headers from all rows
     const uniqueHeadersSet = new Set();
-    data.forEach((row) => {
+    formattedData.forEach((row) => {
       Object.keys(row).forEach((key) => uniqueHeadersSet.add(key));
     });
 
@@ -336,7 +353,7 @@ app.get("/generateCSV", isAuthenticated, async (req, res) => {
     csvStream.write(uniqueHeaders); // Write the header row
 
     // Write the data rows to the CSV stream
-    data.forEach((item) => {
+    formattedData.forEach((item) => {
       const rowData = uniqueHeaders.map((header) => item[header]);
       csvStream.write(rowData);
     });
@@ -761,16 +778,17 @@ app.post(
           .pipe(csv())
           .on("data", async (data) => {
             try {
-              console.log("Processing data:", data);
+           
 
             const username = req.user.username;
-            
-
-            let formattedDate = null;
-            if (data.Date) {
-              formattedDate = moment(data.Date, 'M/D/YYYY').toDate();
-            }
-
+      
+            let formattedDate;
+    if (data.Date) {
+      formattedDate = moment(data.Date, 'M/D/YYYY').toDate();
+    } else {
+      // Set an empty value or any default value for Date field
+      formattedDate = null; // or new Date(); or any other default value
+    }
             const rowWithUsername = {
               ...data,
               Location: data.Location,
@@ -779,7 +797,7 @@ app.post(
               HelpDeskReference: data.HelpDeskReference,
               IPS: data.IPS === 'true',
               Fault: data.Fault,
-              Date: new Date(formattedDate),
+              Date: formattedDate,
               HotTemperature: parseFloat(data.HotTemperature),
               HotFlow: parseFloat(data.HotFlow),
               HotReturn: parseFloat(data.HotReturn),
