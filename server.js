@@ -456,15 +456,18 @@ function buildQuery(queryParams) {
   addRangeQuery("HotReturn", "minHotReturn", "maxHotReturn");
   addRangeQuery("ColdTemperature", "minColdTemperature", "maxColdTemperature");
 
-  
-  const startDate = moment(queryParams.startDate, 'M/D/YYYY').toDate()
-  const endDate = moment(queryParams.endDate, 'M/D/YYYY').toDate()
+  console.log(queryParams.startDate);
+console.log(queryParams.endDate);
 
+const startDate = moment(queryParams.startDate, 'YYYY-MM-DD').toDate();
+const endDate = moment(queryParams.endDate, 'YYYY-MM-DD').toDate();
+
+console.log(startDate);
+console.log(endDate);
   if (!isNaN(startDate) && !isNaN(endDate)) {
-    const formattedStartDate = moment(startDate).startOf('day').toISOString();
-    const formattedEndDate = moment(endDate).endOf('day').toISOString();
 
-    query.Date = { $gte: formattedStartDate, $lte: formattedEndDate };
+
+    query.Date = { $gte: startDate, $lte: endDate };
   } else {
     console.error("Invalid startDate or endDate");
     // Handle the error, e.g., return an error response
