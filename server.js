@@ -8,6 +8,8 @@ const app = express();
 const User = require('./models/Users');
 const MainData = require('./models/Data');
 const multer = require('multer');
+const moment = require('moment');
+
 const csv = require('csv-parser');
 
 const fs = require('fs');
@@ -424,17 +426,17 @@ function buildQuery(queryParams) {
   addRangeQuery('HotReturn', 'minHotReturn', 'maxHotReturn');
   addRangeQuery('ColdTemperature', 'minColdTemperature', 'maxColdTemperature');
 
-  const startDate = new Date(queryParams.startDate);
-  const endDate = new Date(queryParams.endDate);
+  const startDate = moment(queryParams.startDate, 'M/D/YYYY').toDate()
+  const endDate = (queryParams.endDate, 'M/D/YYYY').toDate()
 
-  if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-    const formattedStartDate = startDate.toISOString().split('T')[0];
-    const formattedEndDate = endDate.toISOString().split('T')[0];
+  if (!isNaN(startDate) && !isNaN(endDate)) {
+    // const formattedStartDate = startDate.toISOString().split('T')[0];
+    // const formattedEndDate = endDate.toISOString().split('T')[0];
 
-    query.Date = { $gte: formattedStartDate, $lte: formattedEndDate };
+    query.Date = { $gte: startDate, $lte: endDate };
 
-    console.log('Formatted Start Date:', formattedStartDate);
-    console.log('Formatted End Date:', formattedEndDate);
+    // console.log('Formatted Start Date:', formattedStartDate);
+    // console.log('Formatted End Date:', formattedEndDate);
   } else {
     console.error('Invalid startDate or endDate');
     // Handle the error, e.g., return an error response
@@ -711,8 +713,9 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
             console.log('Processing data:', data);
 
             const username = req.user.username;
-            const receivedDate = new Date(data.Date);
-            // const formattedDate = receivedDate?.toISOString().split('T')[0];
+            
+
+            const formattedDate  = moment(data.Date, 'M/D/YYYY').toDate();
 
             const rowWithUsername = {
               ...data,
@@ -722,7 +725,7 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
               HelpDeskReference: data.HelpDeskReference,
               IPS: data.IPS === 'true',
               Fault: data.Fault,
-              Date: receivedDate,
+              Date: formattedDate,
               HotTemperature: parseFloat(data.HotTemperature),
               HotFlow: parseFloat(data.HotFlow),
               HotReturn: parseFloat(data.HotReturn),
