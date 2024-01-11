@@ -766,7 +766,10 @@ app.post(
             const username = req.user.username;
             
 
-            const formattedDate  = moment(data.Date, 'M/D/YYYY').toDate();
+            let formattedDate = null;
+            if (data.Date) {
+              formattedDate = moment(data.Date, 'M/D/YYYY').toDate();
+            }
 
             const rowWithUsername = {
               ...data,
