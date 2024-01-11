@@ -437,21 +437,21 @@ function buildQuery(queryParams) {
   addRangeQuery("HotReturn", "minHotReturn", "maxHotReturn");
   addRangeQuery("ColdTemperature", "minColdTemperature", "maxColdTemperature");
 
-  // const startDate = new Date(queryParams.startDate);
-  // const endDate = new Date(queryParams.endDate);
+  const startDate = new Date(queryParams.startDate);
+  const endDate = new Date(queryParams.endDate);
 
-  // if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-  //   const formattedStartDate = startDate.toISOString().split('T')[0];
-  //   const formattedEndDate = endDate.toISOString().split('T')[0];
+  if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+    const formattedStartDate = startDate.toISOString().split("T")[0];
+    const formattedEndDate = endDate.toISOString().split("T")[0];
 
-  //   query.Date = { $gte: formattedStartDate, $lte: formattedEndDate };
+    query.Date = { $gte: formattedStartDate, $lte: formattedEndDate };
 
-  //   console.log('Formatted Start Date:', formattedStartDate);
-  //   console.log('Formatted End Date:', formattedEndDate);
-  // } else {
-  //   console.error('Invalid startDate or endDate');
-  //   // Handle the error, e.g., return an error response
-  // }
+    console.log("Formatted Start Date:", formattedStartDate);
+    console.log("Formatted End Date:", formattedEndDate);
+  } else {
+    console.error("Invalid startDate or endDate");
+    // Handle the error, e.g., return an error response
+  }
 
   const zetacode = parseInt(queryParams.zetacode);
   if (!isNaN(zetacode)) {
