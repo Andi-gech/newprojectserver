@@ -1,9 +1,9 @@
-const express = require('express');
-const dbConn = require('./db/db.js');
-const session = require('express-session');
-const { MongoClient, MongoError,ObjectId } = require('mongodb');
-const crypto = require('crypto');
-const bcrypt = require('bcrypt');
+const express = require("express");
+const dbConn = require("./db/db.js");
+const session = require("express-session");
+const { MongoClient, MongoError, ObjectId } = require("mongodb");
+const crypto = require("crypto");
+const bcrypt = require("bcrypt");
 const app = express();
 const User = require('./models/Users');
 const MainData = require('./models/Data');
@@ -12,81 +12,81 @@ const moment = require('moment');
 
 const csv = require('csv-parser');
 
-const fs = require('fs');
+const fs = require("fs");
 // const upload = multer({ dest: 'uploads/' });
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-const path = require('path');
-const ExcelJS = require('exceljs');
-const cors=require('cors')
-const streamifier = require('streamifier');
-const fastcsv = require('fast-csv');
-const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
-const stream = require('stream');
-
+const createCsvWriter = require("csv-writer").createObjectCsvWriter;
+const path = require("path");
+const ExcelJS = require("exceljs");
+const cors = require("cors");
+const streamifier = require("streamifier");
+const fastcsv = require("fast-csv");
+const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
+const stream = require("stream");
 
 // Call the connectToDatabase function to establish the connection
 dbConn()
   .then(() => {
     app.listen(9050, () => {
-      console.log('Server running on port 9000');
-      
+      console.log("Server running on port 9000");
     });
   })
   .catch((error) => {
-    console.error('Failed to establish database connection:', error);
+    console.error("Failed to establish database connection:", error);
   });
- 
+
 // Generate a random secret key
-const secretKey = crypto.randomBytes(64).toString('hex');
+const secretKey = crypto.randomBytes(64).toString("hex");
 const storage = multer.memoryStorage(); // Store the file in memory
 const upload = multer({ storage: storage });
-
 
 const currentTime = new Date();
 const expirationTime = new Date(currentTime.getTime() + 60 * 60 * 1000);
 
 // Middleware'
-app.use(cors())
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-
 const isAuthenticated = (req, res, next) => {
-  const authHeader = req.header('Authorization');
+  const authHeader = req.header("Authorization");
 
   if (!authHeader) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const [tokenType, token] = authHeader.split(' ');
+  const [tokenType, token] = authHeader.split(" ");
 
-  if (!tokenType || tokenType.toLowerCase() !== 'jwt' || !token) {
-    return res.status(401).json({ message: 'Invalid token type or format' });
+  if (!tokenType || tokenType.toLowerCase() !== "jwt" || !token) {
+    return res.status(401).json({ message: "Invalid token type or format" });
   }
 
   try {
     // Verify the JWT token
-    const decoded = jwt.verify(token, '1q2w3e4r5t');
+    const decoded = jwt.verify(token, "1q2w3e4r5t");
 
     // Attach user information to the request object
     req.user = decoded;
 
     next();
   } catch (error) {
-    console.error('Error during authentication:', error);
-    res.status(401).json({ message: 'Invalid token' });
+    console.error("Error during authentication:", error);
+    res.status(401).json({ message: "Invalid token" });
   }
 };
-
 
 // Middleware to check role
 const canEdit = (req, res, next) => {
   if (req.session && req.session.authenticated) {
     const loggedInUserPermission = req.session.permission;
-    if (loggedInUserPermission !== 'admin' || loggedInUserPermission !== 'editor') {
-      return res.status(403).json({ message: 'Only admins and editors have this privilege' });
-    }else {
+    if (
+      loggedInUserPermission !== "admin" ||
+      loggedInUserPermission !== "editor"
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Only admins and editors have this privilege" });
+    } else {
       next();
     }
   }
@@ -95,87 +95,85 @@ const canEdit = (req, res, next) => {
 // Middleware to verify admin role
 const isAdmin = (req, res, next) => {
   if (req.session && req.session.authenticated) {
-
     const loggedInUserPermission = req.session.permission;
     // Check if the logged-in user has admin permissions
-    if (loggedInUserPermission !== 'admin') {
-      return res.status(403).json({ message: 'Only admins has this privilege' });
-    }
-    else{
+    if (loggedInUserPermission !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Only admins has this privilege" });
+    } else {
       next();
     }
   }
 };
 
 // Sign-in route
-app.post('/auth/signin', async (req, res) => {
+app.post("/auth/signin", async (req, res) => {
   const { username, password } = req.body;
-  console.log(username,password)
+  console.log(username, password);
 
   try {
     // Find the user by username in the database
     const user = await User.findOne({ username });
 
     if (user) {
-    
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (isMatch) {
-      
         const accessToken = jwt.sign(
           {
             username: user.username,
             permission: user.permission,
           },
-          '1q2w3e4r5t', 
-          { expiresIn: 86400 } 
+          "1q2w3e4r5t",
+          { expiresIn: 86400 }
         );
 
         // Generate a refresh token
         const refreshToken = jwt.sign(
           { username: user.username },
-          'your-refresh-secret-key', 
-          { expiresIn: 432000 } 
+          "your-refresh-secret-key",
+          { expiresIn: 432000 }
         );
 
         res.json({
           accessToken,
           expiresIn: 86400,
-          tokenType: 'Jwt',
-          authUserState: 'authenticated',
+          tokenType: "Jwt",
+          authUserState: "authenticated",
           username: user.username,
           permission: user.permission,
           refreshToken,
           refreshTokenExpireIn: 432000,
         });
       } else {
-        res.status(401).json({ message: 'Invalid password' });
+        res.status(401).json({ message: "Invalid password" });
       }
     } else {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: "User not found" });
     }
   } catch (error) {
-    console.error('Error during sign-in:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error during sign-in:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
-app.post('/auth/refresh', async (req, res) => {
+app.post("/auth/refresh", async (req, res) => {
   const refreshToken = req.body.refreshToken;
 
   if (!refreshToken) {
-    return res.status(401).json({ message: 'Refresh token is missing' });
+    return res.status(401).json({ message: "Refresh token is missing" });
   }
 
-  jwt.verify(refreshToken, 'your-refresh-secret-key', async (err, decoded) => {
+  jwt.verify(refreshToken, "your-refresh-secret-key", async (err, decoded) => {
     if (err) {
-      return res.status(403).json({ message: 'Invalid refresh token' });
+      return res.status(403).json({ message: "Invalid refresh token" });
     }
 
     // Check if the user exists in the database
     const user = await User.findOne({ username: decoded.username });
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Generate a new access token
@@ -184,23 +182,21 @@ app.post('/auth/refresh', async (req, res) => {
         username: user.username,
         permission: user.permission,
       },
-      '1q2w3e4r5t',
+      "1q2w3e4r5t",
       { expiresIn: 86400 }
     );
 
     res.json({
       accessToken: newAccessToken,
       expiresIn: 86400,
-      tokenType: 'Jwt',
-      authUserState: 'authenticated',
+      tokenType: "Jwt",
+      authUserState: "authenticated",
     });
   });
 });
 
-
-
 // Sign-out route
-app.post('/auth/signout', async (req, res) => {
+app.post("/auth/signout", async (req, res) => {
   try {
     // Find the user by username in the database
     const user = await User.findOne({ username: req.session.username });
@@ -212,21 +208,19 @@ app.post('/auth/signout', async (req, res) => {
     }
 
     req.session.destroy();
-    res.clearCookie('connect.sid'); // Clear the session ID cookie
-    res.json({ message: 'Sign-out successful' });
+    res.clearCookie("connect.sid"); // Clear the session ID cookie
+    res.json({ message: "Sign-out successful" });
   } catch (error) {
-    console.error('Error during sign-out:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error during sign-out:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-
-
 // Change password route
 // Change password route
-app.post('/auth/changepassword', isAuthenticated, async (req, res) => {
+app.post("/auth/changepassword", isAuthenticated, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  
+
   // Extract username from req.user
   const { username } = req.user;
 
@@ -246,85 +240,93 @@ app.post('/auth/changepassword', isAuthenticated, async (req, res) => {
         user.password = hashedPassword;
         await user.save();
 
-        res.json({ message: 'Password changed successfully' });
+        res.json({ message: "Password changed successfully" });
       } else {
-        res.status(401).json({ message: 'Invalid current password' });
+        res.status(401).json({ message: "Invalid current password" });
       }
     } else {
-      res.status(401).json({ message: 'User not found' });
+      res.status(401).json({ message: "User not found" });
     }
   } catch (error) {
-    console.error('Error during password change:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error during password change:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-
-app.post('/adddata', isAuthenticated, async (req, res) => {
+app.post("/adddata", isAuthenticated, async (req, res) => {
   const data = req.body;
 
   try {
-    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+    const client = await MongoClient.connect(
+      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
+    );
+    const db = client.db("Mydatabase");
+    const collection = db.collection("maindatas");
 
-    
     await collection.insertOne(data);
 
     client.close();
 
-    res.json({ message: 'Data added successfully' });
+    res.json({ message: "Data added successfully" });
   } catch (error) {
-    console.error('Error while adding data:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while adding data:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-app.get('/getdata', isAuthenticated, async (req, res) => {
+app.get("/getdata", isAuthenticated, async (req, res) => {
   try {
-    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+    const client = await MongoClient.connect(
+      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
+    );
+    const db = client.db("Mydatabase");
+    const collection = db.collection("maindatas");
 
     const query = buildQuery(req.query);
 
-    console.log('Query:', query);
+    console.log("Query:", query);
 
-    const data = await collection.find(query, { projection: {  additionalData: 0 } }).toArray();
+    const data = await collection
+      .find(query, { projection: { additionalData: 0 } })
+      .toArray();
 
     client.close();
 
     res.json(data);
   } catch (error) {
-    console.error('Error while retrieving data:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while retrieving data:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-app.get('/generateCSV', isAuthenticated, async (req, res) => {
+app.get("/generateCSV", isAuthenticated, async (req, res) => {
   try {
     // Connect to the MongoDB database
-    const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
+    const client = new MongoClient(
+      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority",
+      { useUnifiedTopology: true }
+    );
     await client.connect();
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+    const db = client.db("Mydatabase");
+    const collection = db.collection("maindatas");
     const query = buildQuery(req.query);
 
     // Fetch the collection documents
-    const data = await collection.find(query, { projection: { _id: 0 } }).toArray();
-
+    const data = await collection
+      .find(query, { projection: { _id: 0 } })
+      .toArray();
 
     // Collect unique headers from all rows
     const uniqueHeadersSet = new Set();
-    data.forEach(row => {
-      Object.keys(row).forEach(key => uniqueHeadersSet.add(key));
+    data.forEach((row) => {
+      Object.keys(row).forEach((key) => uniqueHeadersSet.add(key));
     });
 
     const uniqueHeaders = Array.from(uniqueHeadersSet);
 
     // Set response headers for file download
-    res.setHeader('Content-Disposition', 'attachment; filename=output.csv');
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader("Content-Disposition", "attachment; filename=output.csv");
+    res.setHeader("Content-Type", "text/csv");
 
     // Create a writable stream to store CSV data in memory
     const csvStream = fastcsv.format({ headers: true });
@@ -334,8 +336,8 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     csvStream.write(uniqueHeaders); // Write the header row
 
     // Write the data rows to the CSV stream
-    data.forEach(item => {
-      const rowData = uniqueHeaders.map(header => item[header]);
+    data.forEach((item) => {
+      const rowData = uniqueHeaders.map((header) => item[header]);
       csvStream.write(rowData);
     });
 
@@ -345,39 +347,43 @@ app.get('/generateCSV', isAuthenticated, async (req, res) => {
     // Close the MongoDB connection
     await client.close();
   } catch (error) {
-    console.error('Error while generating CSV file:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while generating CSV file:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
-app.get('/generateExcel', isAuthenticated, async (req, res) => {
+app.get("/generateExcel", isAuthenticated, async (req, res) => {
   try {
     // Connect to the MongoDB database
-    const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority', { useUnifiedTopology: true });
+    const client = new MongoClient(
+      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority",
+      { useUnifiedTopology: true }
+    );
     await client.connect();
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+    const db = client.db("Mydatabase");
+    const collection = db.collection("maindatas");
     const query = buildQuery(req.query);
 
     // Fetch the collection documents
-    const data = await collection.find(query, { projection: { _id: 0 } }).toArray();
-
+    const data = await collection
+      .find(query, { projection: { _id: 0 } })
+      .toArray();
 
     // Close the MongoDB connection
     await client.close();
 
     // Check if any data was found
     if (data.length === 0) {
-      return res.status(404).json({ message: 'No data found' });
+      return res.status(404).json({ message: "No data found" });
     }
 
     // Create a new Excel workbook and worksheet
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Data');
+    const worksheet = workbook.addWorksheet("Data");
 
     // Collect unique headers from all rows
     const uniqueHeadersSet = new Set();
-    data.forEach(row => {
-      Object.keys(row).forEach(key => uniqueHeadersSet.add(key));
+    data.forEach((row) => {
+      Object.keys(row).forEach((key) => uniqueHeadersSet.add(key));
     });
 
     const uniqueHeaders = Array.from(uniqueHeadersSet);
@@ -386,8 +392,8 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
     worksheet.addRow(uniqueHeaders);
 
     // Add data rows to the worksheet
-    data.forEach(row => {
-      const rowData = uniqueHeaders.map(header => row[header]);
+    data.forEach((row) => {
+      const rowData = uniqueHeaders.map((header) => row[header]);
       worksheet.addRow(rowData);
     });
 
@@ -395,14 +401,17 @@ app.get('/generateExcel', isAuthenticated, async (req, res) => {
     const excelBuffer = await workbook.xlsx.writeBuffer();
 
     // Set response headers for file download
-    res.setHeader('Content-Disposition', 'attachment; filename=output.xlsx');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader("Content-Disposition", "attachment; filename=output.xlsx");
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
 
     // Send the in-memory Excel data to the client
     res.send(excelBuffer);
   } catch (error) {
-    console.error('Error while generating Excel file:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while generating Excel file:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -418,13 +427,17 @@ function buildQuery(queryParams) {
     }
   }
 
-  addRangeQuery('HotTemperature', 'minHotTemperature', 'maxHotTemperature');
-  addRangeQuery('HotFlow', 'minHotflow', 'maxHotflow');
-  addRangeQuery('ColdFlow', 'minColdFlow', 'maxColdFlow');
-  addRangeQuery('ColdReturn', 'minColdReturn', 'maxColdReturn');
-  addRangeQuery('HotFlushTemperature', 'minHotFlushTemperature', 'maxHotFlushTemperature');
-  addRangeQuery('HotReturn', 'minHotReturn', 'maxHotReturn');
-  addRangeQuery('ColdTemperature', 'minColdTemperature', 'maxColdTemperature');
+  addRangeQuery("HotTemperature", "minHotTemperature", "maxHotTemperature");
+  addRangeQuery("HotFlow", "minHotflow", "maxHotflow");
+  addRangeQuery("ColdFlow", "minColdFlow", "maxColdFlow");
+  addRangeQuery("ColdReturn", "minColdReturn", "maxColdReturn");
+  addRangeQuery(
+    "HotFlushTemperature",
+    "minHotFlushTemperature",
+    "maxHotFlushTemperature"
+  );
+  addRangeQuery("HotReturn", "minHotReturn", "maxHotReturn");
+  addRangeQuery("ColdTemperature", "minColdTemperature", "maxColdTemperature");
 
   const startDate = moment(queryParams.startDate, 'M/D/YYYY').toDate()
   const endDate = (queryParams.endDate, 'M/D/YYYY').toDate()
@@ -438,7 +451,7 @@ function buildQuery(queryParams) {
     // console.log('Formatted Start Date:', formattedStartDate);
     // console.log('Formatted End Date:', formattedEndDate);
   } else {
-    console.error('Invalid startDate or endDate');
+    console.error("Invalid startDate or endDate");
     // Handle the error, e.g., return an error response
   }
 
@@ -450,19 +463,24 @@ function buildQuery(queryParams) {
   return query;
 }
 
-app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
+app.get("/getsingledata/:id", isAuthenticated, async (req, res) => {
   const documentId = req.params.id;
 
   if (!ObjectId.isValid(documentId)) {
-    return res.status(400).json({ message: 'Invalid document ID' });
+    return res.status(400).json({ message: "Invalid document ID" });
   }
 
   try {
-    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+    const client = await MongoClient.connect(
+      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
+    );
+    const db = client.db("Mydatabase");
+    const collection = db.collection("maindatas");
 
-    const data = await collection.findOne({ _id: new ObjectId(documentId) }, { projection: { _id: 0 } });
+    const data = await collection.findOne(
+      { _id: new ObjectId(documentId) },
+      { projection: { _id: 0 } }
+    );
 
     console.log(data);
 
@@ -471,50 +489,52 @@ app.get('/getsingledata/:id', isAuthenticated, async (req, res) => {
     if (data) {
       return res.json({ data: data });
     } else {
-      return res.status(404).json({ message: 'Data not found' });
+      return res.status(404).json({ message: "Data not found" });
     }
   } catch (error) {
-    console.error('Error while retrieving data:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while retrieving data:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 
-
-
-app.post('/getdatabydate', isAuthenticated, async (req, res) => {
+app.post("/getdatabydate", isAuthenticated, async (req, res) => {
   const { date } = req.body;
 
   if (!date) {
-    return res.status(400).json({ message: 'Date not provided' });
+    return res.status(400).json({ message: "Date not provided" });
   }
 
   try {
-    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+    const client = await MongoClient.connect(
+      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
+    );
+    const db = client.db("Mydatabase");
+    const collection = db.collection("maindatas");
 
     const data = await collection.find({ Date: date }).toArray();
 
     client.close();
 
     res.json(data);
-    } catch (error) {
-    console.error('Error while retrieving data:', error);
-    res.status(500).json({ message: 'Internal server error' });
+  } catch (error) {
+    console.error("Error while retrieving data:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-app.delete('/deletedata', isAuthenticated, async (req, res) => {
+app.delete("/deletedata", isAuthenticated, async (req, res) => {
   const { id } = req.body;
 
   if (!ObjectId.isValid(id)) {
-    return res.status(400).json({ message: 'Invalid document ID' });
+    return res.status(400).json({ message: "Invalid document ID" });
   }
 
   try {
-    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+    const client = await MongoClient.connect(
+      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
+    );
+    const db = client.db("Mydatabase");
+    const collection = db.collection("maindatas");
 
     const result = await collection.deleteOne({ _id: new ObjectId(id) });
     console.log(result);
@@ -522,13 +542,13 @@ app.delete('/deletedata', isAuthenticated, async (req, res) => {
     client.close();
 
     if (result.deletedCount === 1) {
-      res.json({ message: 'Data deleted successfully' });
+      res.json({ message: "Data deleted successfully" });
     } else {
-      res.status(404).json({ message: 'Data not found' });
+      res.status(404).json({ message: "Data not found" });
     }
   } catch (error) {
-    console.error('Error while deleting data:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while deleting data:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -559,23 +579,27 @@ app.delete('/deletedata', isAuthenticated, async (req, res) => {
 //   }
 // });
 
-app.put('/updatedata', isAuthenticated, async (req, res) => {
+app.put("/updatedata", isAuthenticated, async (req, res) => {
   const { id, newData } = req.body;
 
   if (!id || !newData) {
-    return res.status(400).json({ message: 'ID or new data not provided in the request body' });
+    return res
+      .status(400)
+      .json({ message: "ID or new data not provided in the request body" });
   }
 
   if (!ObjectId.isValid(id)) {
-    return res.status(400).json({ message: 'Invalid document ID' });
+    return res.status(400).json({ message: "Invalid document ID" });
   }
 
   try {
-    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+    const client = await MongoClient.connect(
+      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
+    );
+    const db = client.db("Mydatabase");
+    const collection = db.collection("maindatas");
     const query = { _id: new ObjectId(id) };
-    
+
     if (newData._id) {
       delete newData._id;
     }
@@ -585,35 +609,48 @@ app.put('/updatedata', isAuthenticated, async (req, res) => {
     client.close();
 
     if (result.matchedCount === 1) {
-      res.json({ message: 'Data updated successfully' });
+      res.json({ message: "Data updated successfully" });
     } else if (result.matchedCount === 0) {
-      res.status(404).json({ message: 'Data not found' });
+      res.status(404).json({ message: "Data not found" });
     } else {
-      res.status(500).json({ message: 'Multiple data matched. Update failed.' });
+      res
+        .status(500)
+        .json({ message: "Multiple data matched. Update failed." });
     }
   } catch (error) {
-    console.error('Error while updating data:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while updating data:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-app.put('/updatedataTable', async (req, res) => {
-  const newFielddata  = req.body.newFielddata;
+app.put("/updatedataTable", async (req, res) => {
+  const newFielddata = req.body.newFielddata;
 
   try {
     // Check if newFielddata is null or undefined
     if (!newFielddata) {
-      return res.status(400).json({ message: 'Invalid request. newFielddata is null or undefined.' });
+      return res
+        .status(400)
+        .json({
+          message: "Invalid request. newFielddata is null or undefined.",
+        });
     }
 
     // Check if newFielddata contains any fields
     if (Object.keys(newFielddata).length === 0) {
-      return res.status(400).json({ message: 'Invalid request. newFielddata must contain fields to update.' });
+      return res
+        .status(400)
+        .json({
+          message:
+            "Invalid request. newFielddata must contain fields to update.",
+        });
     }
 
-    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+    const client = await MongoClient.connect(
+      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
+    );
+    const db = client.db("Mydatabase");
+    const collection = db.collection("maindatas");
 
     // Specify the query to match all documents (empty query)
     const query = {};
@@ -627,26 +664,30 @@ app.put('/updatedataTable', async (req, res) => {
     client.close();
 
     if (result) {
-      res.json({ message: 'Data updated successfully' });
+      res.json({ message: "Data updated successfully" });
     }
   } catch (error) {
-    console.error('Error while updating data:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while updating data:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-app.delete('/deleteColumn/:columnName', async (req, res) => {
+app.delete("/deleteColumn/:columnName", async (req, res) => {
   const columnName = req.params.columnName;
 
   try {
     // Check if columnName is null or undefined
     if (!columnName) {
-      return res.status(400).json({ message: 'Invalid request. columnName is null or undefined.' });
+      return res
+        .status(400)
+        .json({ message: "Invalid request. columnName is null or undefined." });
     }
 
-    const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
+    const client = await MongoClient.connect(
+      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
+    );
+    const db = client.db("Mydatabase");
+    const collection = db.collection("maindatas");
 
     // Specify the update operation to remove a field
     const updateOperation = { $unset: { [columnName]: 1 } };
@@ -662,55 +703,65 @@ app.delete('/deleteColumn/:columnName', async (req, res) => {
       res.status(404).json({ message: `Column '${columnName}' not found` });
     }
   } catch (error) {
-    console.error('Error while deleting column:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while deleting column:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
-const client = new MongoClient('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority&ssl=true', { useUnifiedTopology: true });
+const client = new MongoClient(
+  "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority&ssl=true",
+  { useUnifiedTopology: true }
+);
 
 // Connect to the database when the application starts
-client.connect()
+client
+  .connect()
   .then(() => {
-    console.log('Connected to MongoDB');
+    console.log("Connected to MongoDB");
   })
   .catch((error) => {
-    console.error('Error connecting to MongoDB:', error);
+    console.error("Error connecting to MongoDB:", error);
     process.exit(1);
   });
 
-app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) => {
-  let successCount = 0;
-  let errorCount = 0;
-  let responseDetails = {
-    success: [],
-    errors: [],
-  };
-  let processedCount = 0;
-  let totalRecords = 0;
+app.post(
+  "/importcsv",
+  isAuthenticated,
+  upload.single("file"),
+  async (req, res) => {
+    let successCount = 0;
+    let errorCount = 0;
+    let responseDetails = {
+      success: [],
+      errors: [],
+    };
+    let processedCount = 0;
+    let totalRecords = 0;
 
-  try {
-    console.log('Entered route');
+    try {
+      console.log("Entered route");
 
-    if (!req.file || !req.file.buffer) {
-      return res.status(400).json({ message: 'No file uploaded or file buffer is empty' });
-    }
+      if (!req.file || !req.file.buffer) {
+        return res
+          .status(400)
+          .json({ message: "No file uploaded or file buffer is empty" });
+      }
 
-    const db = client.db('Mydatabase');
-    const collection = db.collection('maindatas');
-    const fileBuffer = req.file.buffer;
+      const db = client.db("Mydatabase");
+      const collection = db.collection("maindatas");
+      const fileBuffer = req.file.buffer;
 
-    console.log('File Buffer Content:', fileBuffer.toString());
+      console.log("File Buffer Content:", fileBuffer.toString());
 
-    const readableStream = stream.Readable.from(fileBuffer.toString());
+      const readableStream = stream.Readable.from(fileBuffer.toString());
 
-    const bulkOps = [];
+      const bulkOps = [];
 
-    await new Promise(async (resolve, reject) => {
-      readableStream
-        .pipe(csv())
-        .on('data', async (data) => {
-          try {
-            console.log('Processing data:', data);
+      await new Promise(async (resolve, reject) => {
+        readableStream
+          .pipe(csv())
+          .on("data", async (data) => {
+            try {
+              console.log("Processing data:", data);
 
             const username = req.user.username;
             
@@ -741,83 +792,100 @@ app.post('/importcsv', isAuthenticated, upload.single('file'), async (req, res) 
               ThermalFlush: data.ThermalFlush,
             };
 
-            bulkOps.push({ insertOne: { document: rowWithUsername } });
+              bulkOps.push({ insertOne: { document: rowWithUsername } });
 
-            successCount++;
-            responseDetails.success.push({ _id: data.HelpDeskReference, message: 'Record inserted successfully' });
-          } catch (error) {
-            if (error instanceof MongoError && error.code === 11000) {
-              console.error('Duplicate key error:', error);
-              responseDetails.errors.push({ _id: data._id, message: 'Duplicate key error: Some records already exist in the database.', error });
-              errorCount++;
-            } else {
-              console.error('Error inserting data:', error);
-              responseDetails.errors.push({ _id: data._id, message: 'Internal server error: Failed to insert the record into the database.', error });
-              errorCount++;
-              reject(error);
-            }
-          }
-        })
-        .on('end', () => {
-          // After processing all records, perform the bulk insert
-          if (bulkOps.length > 0) {
-            collection.bulkWrite(bulkOps)
-              .then(() => {
-                resolve();
-              })
-              .catch((error) => {
-                reject(error);
+              successCount++;
+              responseDetails.success.push({
+                _id: data.HelpDeskReference,
+                message: "Record inserted successfully",
               });
-          } else {
-            resolve();
-          }
-        })
-        .on('error', (error) => {
-          console.error('CSV processing error:', error);
-          responseDetails.errors.push({ _id: null, message: 'Error processing CSV', error });
-          res.status(400).json({ message: 'Error processing CSV', error });
-          reject(error);
-        })
-        .on('data', () => {
-          // Count the total number of records
-          totalRecords++;
-        })
-        .on('end', () => {
-          // If no records found in the CSV file
-          if (totalRecords === 0) {
-            res.status(400).json({ message: 'No records found in the CSV file' });
-            reject('No records found in the CSV file');
-          }
-        });
-    });
+            } catch (error) {
+              if (error instanceof MongoError && error.code === 11000) {
+                console.error("Duplicate key error:", error);
+                responseDetails.errors.push({
+                  _id: data._id,
+                  message:
+                    "Duplicate key error: Some records already exist in the database.",
+                  error,
+                });
+                errorCount++;
+              } else {
+                console.error("Error inserting data:", error);
+                responseDetails.errors.push({
+                  _id: data._id,
+                  message:
+                    "Internal server error: Failed to insert the record into the database.",
+                  error,
+                });
+                errorCount++;
+                reject(error);
+              }
+            }
+          })
+          .on("end", () => {
+            // After processing all records, perform the bulk insert
+            if (bulkOps.length > 0) {
+              collection
+                .bulkWrite(bulkOps)
+                .then(() => {
+                  resolve();
+                })
+                .catch((error) => {
+                  reject(error);
+                });
+            } else {
+              resolve();
+            }
+          })
+          .on("error", (error) => {
+            console.error("CSV processing error:", error);
+            responseDetails.errors.push({
+              _id: null,
+              message: "Error processing CSV",
+              error,
+            });
+            res.status(400).json({ message: "Error processing CSV", error });
+            reject(error);
+          })
+          .on("data", () => {
+            // Count the total number of records
+            totalRecords++;
+          })
+          .on("end", () => {
+            // If no records found in the CSV file
+            if (totalRecords === 0) {
+              res
+                .status(400)
+                .json({ message: "No records found in the CSV file" });
+              reject("No records found in the CSV file");
+            }
+          });
+      });
 
-    // Include success and error counts in the response message
-    res.json({
-      message: 'CSV data imported successfully',
-      successCount,
-      errorCount,
-      details: responseDetails,
-    });
+      // Include success and error counts in the response message
+      res.json({
+        message: "CSV data imported successfully",
+        successCount,
+        errorCount,
+        details: responseDetails,
+      });
 
-    console.log('Route execution completed');
-  } catch (error) {
-    console.error('Error while importing CSV:', error);
-    res.status(500).json({ message: 'Internal server error' });
+      console.log("Route execution completed");
+    } catch (error) {
+      console.error("Error while importing CSV:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
-});
+);
 
-
-
-
-
-app.post('/createUser', isAuthenticated, async (req, res) => {
+app.post("/createUser", isAuthenticated, async (req, res) => {
   const { username, password, permission } = req.body;
 
   try {
     // Check if the username already exists
     const existingUser = await User.findOne({ username });
     if (existingUser) {
-      return res.status(400).json({ message: 'Username already exists' });
+      return res.status(400).json({ message: "Username already exists" });
     }
 
     // Hash the password
@@ -829,115 +897,122 @@ app.post('/createUser', isAuthenticated, async (req, res) => {
       password: hashedPassword,
       permission,
       session: {
-        sessionId: '',
+        sessionId: "",
         expiresAt: null,
         createdAt: null,
-        ipAddress: '',
-        userAgent: '',
+        ipAddress: "",
+        userAgent: "",
       },
     });
 
     // Save the user to the database
     await newUser.save();
 
-    res.json({ message: 'User created successfully' });
+    res.json({ message: "User created successfully" });
   } catch (error) {
-    console.error('Error while creating user:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while creating user:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-app.delete('/deleteUser', isAuthenticated, isAdmin, async (req, res) => {
+app.delete("/deleteUser", isAuthenticated, isAdmin, async (req, res) => {
   const { usernameToDelete } = req.body;
 
   try {
-       // Check if the user to delete exists
+    // Check if the user to delete exists
     const userToDelete = await User.findOne({ username: usernameToDelete });
     if (!userToDelete) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Perform the delete operation
     await User.deleteOne({ username: usernameToDelete });
 
-    res.json({ message: 'User deleted successfully' });
+    res.json({ message: "User deleted successfully" });
   } catch (error) {
-    console.error('Error while deleting user:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while deleting user:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-app.put('/editUserPermission', isAuthenticated, isAdmin, async (req, res) => {
+app.put("/editUserPermission", isAuthenticated, isAdmin, async (req, res) => {
   const { usernameToEdit, permission } = req.body;
 
   try {
     // Check if the user to edit exists
     const userToEdit = await User.findOne({ username: usernameToEdit });
     if (!userToEdit) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Update the user's permissions
     userToEdit.permission = permission;
     await userToEdit.save();
 
-    res.json({ message: 'User permissions updated successfully' });
+    res.json({ message: "User permissions updated successfully" });
   } catch (error) {
-    console.error('Error while editing user permissions:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while editing user permissions:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-
-app.get('/fetchUsers', isAuthenticated, async (req, res) => {
+app.get("/fetchUsers", isAuthenticated, async (req, res) => {
   const loggedInUsername = req.user.username;
 
   try {
-     // Fetch all documents except the one with the same username as the logged-in user
-    const users = await User.find({ username: { $ne: loggedInUsername } }, { username: 1, permission: 1 });
+    // Fetch all documents except the one with the same username as the logged-in user
+    const users = await User.find(
+      { username: { $ne: loggedInUsername } },
+      { username: 1, permission: 1 }
+    );
 
     res.json({ users });
   } catch (error) {
-    console.error('Error while fetching users:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while fetching users:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-app.get('/getUser/:id', isAuthenticated, async (req, res) => {
+app.get("/getUser/:id", isAuthenticated, async (req, res) => {
   const userId = req.params.id;
 
   try {
     // Check if the provided ID is a valid ObjectId
     if (!ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+      return res.status(400).json({ message: "Invalid user ID" });
     }
 
     // Find the user by _id in the database
-    const user = await User.findOne({ _id: new ObjectId(userId) }, { password: 0 });
+    const user = await User.findOne(
+      { _id: new ObjectId(userId) },
+      { password: 0 }
+    );
 
     if (user) {
       res.json({ user });
     } else {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: "User not found" });
     }
   } catch (error) {
-    console.error('Error while retrieving user by ID:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while retrieving user by ID:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
-app.put('/updateUserPermissions/:id', isAuthenticated, async (req, res) => {
+app.put("/updateUserPermissions/:id", isAuthenticated, async (req, res) => {
   const userId = req.params.id;
   const newPermissions = req.body.permissions;
 
   try {
     // Check if the provided ID is a valid ObjectId
     if (!ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+      return res.status(400).json({ message: "Invalid user ID" });
     }
 
     // Check if newPermissions is provided
     if (!newPermissions) {
-      return res.status(400).json({ message: 'New permissions are required for the update' });
+      return res
+        .status(400)
+        .json({ message: "New permissions are required for the update" });
     }
 
     // Update user permissions in the database
@@ -950,10 +1025,10 @@ app.put('/updateUserPermissions/:id', isAuthenticated, async (req, res) => {
     if (updatedUser) {
       res.json({ user: updatedUser });
     } else {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: "User not found" });
     }
   } catch (error) {
-    console.error('Error while updating user permissions:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error while updating user permissions:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
