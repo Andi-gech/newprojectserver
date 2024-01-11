@@ -776,7 +776,7 @@ app.post(
               HelpDeskReference: data.HelpDeskReference,
               IPS: data.IPS === 'true',
               Fault: data.Fault,
-              Date: formattedDate,
+              Date: new Date(formattedDate),
               HotTemperature: parseFloat(data.HotTemperature),
               HotFlow: parseFloat(data.HotFlow),
               HotReturn: parseFloat(data.HotReturn),
