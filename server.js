@@ -290,14 +290,19 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
       .find(query, { projection: { additionalData: 0 } })
       .toArray();
 
-    // Format the date in the response
+  
     const formattedData = data.map(item => {
       return {
-        Location: item.Location, // Make sure "Location" is the first field
-        Zetacode: item.Zetacode, // Make sure "Zetacode" is the second field
+        Location: item.Location, 
+        Zetacode: item.Zetacode, 
+        IPS: item.IPS?"yes":"no",
+        TapNotSet: item.TapNotSet?"yes":"no",
+        TMVFail: item.TMVFail?"yes":"no",
+        PreflushSampleTaken: item.PreflushSampleTaken?"yes":"no",
+        PostflushSampleTaken: item.PostflushSampleTaken?"yes":"no",
         ...item,
         Date: item.Date ? moment(item.Date).format('YYYY-MM-DD') : null,
-        // Add other fields as needed
+     
       };
     });
 
@@ -331,7 +336,7 @@ app.get("/generateCSV", isAuthenticated, async (req, res) => {
         return {
           ...item,
           Date: item.Date ? moment(item.Date).format('YYYY-MM-DD') : null,
-          // Add other fields as needed
+          
         };
       });
   
@@ -782,39 +787,49 @@ app.post(
           .pipe(csv())
           .on("data", async (data) => {
             try {
-           
 
-            const username = req.user.username;
-      
+const cleanedData = {};
+for (const key in data) {
+  if (data.hasOwnProperty(key)) {
+    const cleanedKey = key.replace(/\s+/g, '').toLowerCase();
+    cleanedData[cleanedKey] = data[key];
+  }
+}
+
+console.log(cleanedData)
+
+
             let formattedDate;
     if (data.Date) {
       formattedDate = moment(data.Date, 'M/D/YYYY').toDate();
     } else {
-      // Set an empty value or any default value for Date field
-      formattedDate = null; // or new Date(); or any other default value
+    
+      formattedDate = null;
     }
+    const validValues = ['yes', 'y', 'true'];
+
             const rowWithUsername = {
               ...data,
-              Location: data.Location,
-              Zetacode: parseInt(data.Zetacode),
-              Room: data.Room,
-              HelpDeskReference: data.HelpDeskReference,
-              IPS: data.IPS === 'true',
-              Fault: data.Fault,
+              Location: cleanedData.location,
+              Zetacode: parseInt(cleanedData.zetacode),
+              Room: cleanedData.room,
+              HelpDeskReference: cleanedData.helpdeskreference,
+              IPS:validValues.includes(cleanedData?.ips?.trim()?.toLowerCase())?true:false,
+              Fault: cleanedData.fault,
               Date: formattedDate,
-              HotTemperature: parseFloat(data.HotTemperature),
-              HotFlow: parseFloat(data.HotFlow),
-              HotReturn: parseFloat(data.HotReturn),
-              ColdTemperature: parseFloat(data.ColdTemperature),
-              ColdFlow: parseFloat(data.ColdFlow),
-              ColdReturn: parseFloat(data.ColdReturn),
-              HotFlushTemperature: parseFloat(data.HotFlushTemperature),
-              TapNotSet: data.TapNotSet === 'true',
-              ColdFlushTemperature: parseFloat(data.ColdFlushTemperature),
-              TMVFail: data.TMVFail === 'true',
-              PreflushSampleTaken: data.PreflushSampleTaken === 'true',
-              PostflushSampleTaken: data.PostflushSampleTaken === 'true',
-              ThermalFlush: data.ThermalFlush,
+              HotTemperature: parseFloat(cleanedData.hottemperature),
+              HotFlow: parseFloat(cleanedData.hotflow),
+              HotReturn: parseFloat(cleanedData.hotreturn),
+              ColdTemperature: parseFloat(cleanedData.coldtemperature),
+              ColdFlow: parseFloat(cleanedData.coldflow),
+              ColdReturn: parseFloat(cleanedData.coldreturn),
+              HotFlushTemperature: parseFloat(cleanedData.hotflushtemperature),
+              TapNotSet:validValues.includes(cleanedData?.tapnotset?.trim()?.toLowerCase())?true:false ,
+              ColdFlushTemperature: parseFloat(cleanedData.coldflushtemperature),
+              TMVFail: validValues.includes(cleanedData?.tmvfail?.trim()?.toLowerCase())?true:false ,
+              PreflushSampleTaken: validValues.includes(cleanedData?.preflushsampletaken?.trim()?.toLowerCase())?true:false,
+              PostflushSampleTaken:  validValues.includes(cleanedData?.postflushsampletaken?.trim()?.toLowerCase())?true:false,
+              ThermalFlush: cleanedData.thermalflush,
             };
 
               bulkOps.push({ insertOne: { document: rowWithUsername } });
