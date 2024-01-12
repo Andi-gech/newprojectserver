@@ -293,6 +293,8 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
     // Format the date in the response
     const formattedData = data.map(item => {
       return {
+        Location: item.Location, // Make sure "Location" is the first field
+        Zetacode: item.Zetacode, // Make sure "Zetacode" is the second field
         ...item,
         Date: item.Date ? moment(item.Date).format('YYYY-MM-DD') : null,
         // Add other fields as needed
@@ -307,6 +309,7 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 app.get("/generateCSV", isAuthenticated, async (req, res) => {
   try {
