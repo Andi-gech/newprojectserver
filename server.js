@@ -87,8 +87,8 @@ const canEdit = (req, res, next) => {
 
 // Middleware to verify admin role
 const isAdmin = (req, res, next) => {
-  if (req.session && req.session.authenticated) {
-    const loggedInUserPermission = req.session.permission;
+ 
+    const loggedInUserPermission = req.user.permission;
     // Check if the logged-in user has admin permissions
     if (loggedInUserPermission !== "admin") {
       return res
@@ -97,7 +97,7 @@ const isAdmin = (req, res, next) => {
     } else {
       next();
     }
-  }
+  
 };
 
 // Sign-in route
@@ -837,6 +837,7 @@ app.delete("/deleteUser", isAuthenticated, isAdmin, async (req, res) => {
 
     // Perform the delete operation
     await userDataCollection.deleteOne({ username: usernameToDelete });
+
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
