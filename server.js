@@ -257,12 +257,13 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
       return {
         Location: item.Location, 
         Zetacode: item.Zetacode, 
+        ...item,
         IPS: item.IPS?"yes":"no",
         TapNotSet: item.TapNotSet?"yes":"no",
         TMVFail: item.TMVFail?"yes":"no",
         PreflushSampleTaken: item.PreflushSampleTaken?"yes":"no",
         PostflushSampleTaken: item.PostflushSampleTaken?"yes":"no",
-        ...item,
+      
         Date: item.Date ? moment(item.Date).format('YYYY-MM-DD') : null,
      
       };
