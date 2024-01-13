@@ -432,10 +432,10 @@ console.log(endDate);
     query.Zetacode = zetacode;
   }
   if (queryParams.floorNumber) {
-    query.FloorNumber = parseInt(queryParams.floorNumber, 10);
+    query.Floor= parseInt(queryParams.floorNumber, 10);
   } else if (queryParams.emptyFloor) {
 
-    query.FloorNumber = { $in: [null, undefined] };
+    query.Floor= { $in: [null, undefined] };
   }
 
 
@@ -679,7 +679,7 @@ console.log(cleanedData)
       Location: cleanedData.Location,
       Zetacode: parseInt(cleanedData.Zetacode),
       Room: cleanedData.Room,
-      Floor:cleanedData.Floor,
+      Floor:parseInt(cleanedData.Floor),
       HelpDeskReference: cleanedData.HelpDeskReference,
       IPS: validValues.includes(cleanedData?.IPS?.trim()?.toLowerCase()) ? true : 
            invalidValues.includes(cleanedData?.IPS?.trim()?.toLowerCase()) ? false : '',
