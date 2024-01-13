@@ -208,8 +208,7 @@ app.post("/auth/changepassword", isAuthenticated, async (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         // Update the user's password in the user document
-        user.password = hashedPassword;
-        await user.save();
+        await userDataCollection.updateOne({ username }, { $set: { password: hashedPassword } });
 
         res.json({ message: "Password changed successfully" });
       } else {
