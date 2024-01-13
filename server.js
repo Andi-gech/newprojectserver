@@ -1,49 +1,41 @@
 const express = require("express");
-const dbConn = require("./db/db.js");
-const session = require("express-session");
+const dbManager =  require("./db/db.js");
 const { MongoClient, MongoError, ObjectId } = require("mongodb");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const app = express();
 const User = require('./models/Users');
-const MainData = require('./models/Data');
 const multer = require('multer');
 const moment = require('moment');
-
 const csv = require('csv-parser');
-
-const fs = require("fs");
-// const upload = multer({ dest: 'uploads/' });
-const createCsvWriter = require("csv-writer").createObjectCsvWriter;
-const path = require("path");
 const ExcelJS = require("exceljs");
 const cors = require("cors");
-const streamifier = require("streamifier");
 const fastcsv = require("fast-csv");
 const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose");
 const stream = require("stream");
+let mainDataCollection;
 
-// Call the connectToDatabase function to establish the connection
-dbConn()
-  .then(() => {
+async function startServer() {
+  try {
+    const db = await dbManager.connectToDatabase();
+    mainDataCollection = db.collection("maindatas");
+
     app.listen(9050, () => {
-      console.log("Server running on port 9000");
+      console.log("Server running on port 9050");
     });
-  })
-  .catch((error) => {
+  } catch (error) {
     console.error("Failed to establish database connection:", error);
-  });
+  }
+}
 
-// Generate a random secret key
-const secretKey = crypto.randomBytes(64).toString("hex");
-const storage = multer.memoryStorage(); // Store the file in memory
+// const secretKey = crypto.randomBytes(64).toString("hex");
+const storage = multer.memoryStorage(); 
 const upload = multer({ storage: storage });
 
 const currentTime = new Date();
-const expirationTime = new Date(currentTime.getTime() + 60 * 60 * 1000);
+// const expirationTime = new Date(currentTime.getTime() + 60 * 60 * 1000);
 
-// Middleware'
+
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -195,29 +187,7 @@ app.post("/auth/refresh", async (req, res) => {
   });
 });
 
-// Sign-out route
-app.post("/auth/signout", async (req, res) => {
-  try {
-    // Find the user by username in the database
-    const user = await User.findOne({ username: req.session.username });
-    console.log(req.session.username);
-    if (user) {
-      // Remove the session information from the user document
-      user.session = null;
-      await user.save();
-    }
 
-    req.session.destroy();
-    res.clearCookie("connect.sid"); // Clear the session ID cookie
-    res.json({ message: "Sign-out successful" });
-  } catch (error) {
-    console.error("Error during sign-out:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-// Change password route
-// Change password route
 app.post("/auth/changepassword", isAuthenticated, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -257,15 +227,11 @@ app.post("/adddata", isAuthenticated, async (req, res) => {
   const data = req.body;
 
   try {
-    const client = await MongoClient.connect(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
-    );
-    const db = client.db("Mydatabase");
-    const collection = db.collection("maindatas");
+    
 
-    await collection.insertOne(data);
+    await mainDataCollection.insertOne(data);
 
-    client.close();
+ 
 
     res.json({ message: "Data added successfully" });
   } catch (error) {
@@ -276,17 +242,13 @@ app.post("/adddata", isAuthenticated, async (req, res) => {
 
 app.get("/getdata", isAuthenticated, async (req, res) => {
   try {
-    const client = await MongoClient.connect(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
-    );
-    const db = client.db("Mydatabase");
-    const collection = db.collection("maindatas");
+  
 
     const query = buildQuery(req.query);
 
     console.log("Query:", query);
 
-    const data = await collection
+    const data = await mainDataCollection
       .find(query, { projection: { additionalData: 0 } })
       .toArray();
 
@@ -306,7 +268,7 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
       };
     });
 
-    client.close();
+
 
     res.json(formattedData);
   } catch (error) {
@@ -318,18 +280,11 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
 
 app.get("/generateCSV", isAuthenticated, async (req, res) => {
   try {
-    // Connect to the MongoDB database
-    const client = new MongoClient(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority",
-      { useUnifiedTopology: true }
-    );
-    await client.connect();
-    const db = client.db("Mydatabase");
-    const collection = db.collection("maindatas");
+
+    
     const query = buildQuery(req.query);
 
-    // Fetch the collection documents
-    const data = await collection
+    const data = await mainDataCollection
       .find(query, { projection: { _id: 0 } })
       .toArray();
     const formattedData = data.map(item => {
@@ -369,8 +324,7 @@ app.get("/generateCSV", isAuthenticated, async (req, res) => {
     // End the stream to finish the response
     csvStream.end();
 
-    // Close the MongoDB connection
-    await client.close();
+   
   } catch (error) {
     console.error("Error while generating CSV file:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -378,23 +332,15 @@ app.get("/generateCSV", isAuthenticated, async (req, res) => {
 });
 app.get("/generateExcel", isAuthenticated, async (req, res) => {
   try {
-    // Connect to the MongoDB database
-    const client = new MongoClient(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority",
-      { useUnifiedTopology: true }
-    );
-    await client.connect();
-    const db = client.db("Mydatabase");
-    const collection = db.collection("maindatas");
+
+   
     const query = buildQuery(req.query);
 
-    // Fetch the collection documents
-    const data = await collection
+    const data = await mainDataCollection
       .find(query, { projection: { _id: 0 } })
       .toArray();
 
-    // Close the MongoDB connection
-    await client.close();
+
 
     // Check if any data was found
     if (data.length === 0) {
@@ -422,7 +368,6 @@ app.get("/generateExcel", isAuthenticated, async (req, res) => {
       worksheet.addRow(rowData);
     });
 
-    // Generate a unique filename for the Excel file
     const excelBuffer = await workbook.xlsx.writeBuffer();
 
     // Set response headers for file download
@@ -497,20 +442,14 @@ app.get("/getsingledata/:id", isAuthenticated, async (req, res) => {
   }
 
   try {
-    const client = await MongoClient.connect(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
-    );
-    const db = client.db("Mydatabase");
-    const collection = db.collection("maindatas");
+   
 
-    const data = await collection.findOne(
+    const data = await mainDataCollection.findOne(
       { _id: new ObjectId(documentId) },
       { projection: { _id: 0 } }
     );
 
-    console.log(data);
-
-    client.close();
+   
 
     if (data) {
       return res.json({ data: data });
@@ -523,30 +462,7 @@ app.get("/getsingledata/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-app.post("/getdatabydate", isAuthenticated, async (req, res) => {
-  const { date } = req.body;
 
-  if (!date) {
-    return res.status(400).json({ message: "Date not provided" });
-  }
-
-  try {
-    const client = await MongoClient.connect(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
-    );
-    const db = client.db("Mydatabase");
-    const collection = db.collection("maindatas");
-
-    const data = await collection.find({ Date: date }).toArray();
-
-    client.close();
-
-    res.json(data);
-  } catch (error) {
-    console.error("Error while retrieving data:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
 
 app.delete("/deletedata", isAuthenticated, async (req, res) => {
   const { id } = req.body;
@@ -556,16 +472,11 @@ app.delete("/deletedata", isAuthenticated, async (req, res) => {
   }
 
   try {
-    const client = await MongoClient.connect(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
-    );
-    const db = client.db("Mydatabase");
-    const collection = db.collection("maindatas");
-
-    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+   
+    const result = await mainDataCollection.deleteOne({ _id: new ObjectId(id) });
     console.log(result);
 
-    client.close();
+  
 
     if (result.deletedCount === 1) {
       res.json({ message: "Data deleted successfully" });
@@ -578,32 +489,6 @@ app.delete("/deletedata", isAuthenticated, async (req, res) => {
   }
 });
 
-// app.delete('/deletedatabydate', isAuthenticated, async (req, res) => {
-//   const { date } = req.body;
-
-//   if (!date) {
-//     return res.status(400).json({ message: 'Date not provided in the request body' });
-//   }
-
-//   try {
-//     const client = await MongoClient.connect('mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority');
-//     const db = client.db('Mydatabase');
-//     const collection = db.collection('maindatas');
-
-//     const result = await collection.deleteMany({ Date: date });
-
-//     client.close();
-
-//     if (result.deletedCount > 0) {
-//       res.json({ message: `${result.deletedCount} data(s) deleted successfully` });
-//     } else {
-//       res.status(404).json({ message: 'No data found' });
-//     }
-//   } catch (error) {
-//     console.error('Error while deleting data:', error);
-//     res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
 
 app.put("/updatedata", isAuthenticated, async (req, res) => {
   const { id, newData } = req.body;
@@ -619,20 +504,15 @@ app.put("/updatedata", isAuthenticated, async (req, res) => {
   }
 
   try {
-    const client = await MongoClient.connect(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
-    );
-    const db = client.db("Mydatabase");
-    const collection = db.collection("maindatas");
+   
     const query = { _id: new ObjectId(id) };
 
     if (newData._id) {
       delete newData._id;
     }
 
-    const result = await collection.updateOne(query, { $set: newData });
+    const result = await mainDataCollection.updateOne(query, { $set: newData });
 
-    client.close();
 
     if (result.matchedCount === 1) {
       res.json({ message: "Data updated successfully" });
@@ -672,11 +552,7 @@ app.put("/updatedataTable", async (req, res) => {
         });
     }
 
-    const client = await MongoClient.connect(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
-    );
-    const db = client.db("Mydatabase");
-    const collection = db.collection("maindatas");
+    
 
     // Specify the query to match all documents (empty query)
     const query = {};
@@ -685,9 +561,9 @@ app.put("/updatedataTable", async (req, res) => {
     const updateOperation = { $set: newFielddata };
 
     // Update all documents in the collection
-    const result = await collection.updateMany(query, updateOperation);
+    const result = await mainDataCollection.updateMany(query, updateOperation);
 
-    client.close();
+
 
     if (result) {
       res.json({ message: "Data updated successfully" });
@@ -709,19 +585,15 @@ app.delete("/deleteColumn/:columnName", async (req, res) => {
         .json({ message: "Invalid request. columnName is null or undefined." });
     }
 
-    const client = await MongoClient.connect(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority"
-    );
-    const db = client.db("Mydatabase");
-    const collection = db.collection("maindatas");
+    
 
     // Specify the update operation to remove a field
     const updateOperation = { $unset: { [columnName]: 1 } };
 
     // Update all documents in the collection
-    const result = await collection.updateMany({}, updateOperation);
+    const result = await mainDataCollection.updateMany({}, updateOperation);
 
-    client.close();
+   
 
     if (result.modifiedCount > 0) {
       res.json({ message: `Column '${columnName}' deleted successfully` });
@@ -733,21 +605,8 @@ app.delete("/deleteColumn/:columnName", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-const client = new MongoClient(
-  "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority&ssl=true",
-  { useUnifiedTopology: true }
-);
 
-// Connect to the database when the application starts
-client
-  .connect()
-  .then(() => {
-    console.log("Connected to MongoDB");
-  })
-  .catch((error) => {
-    console.error("Error connecting to MongoDB:", error);
-    process.exit(1);
-  });
+
 
 app.post(
   "/importcsv",
@@ -772,8 +631,6 @@ app.post(
           .json({ message: "No file uploaded or file buffer is empty" });
       }
 
-      const db = client.db("Mydatabase");
-      const collection = db.collection("maindatas");
       const fileBuffer = req.file.buffer;
 
       console.log("File Buffer Content:", fileBuffer.toString());
@@ -865,7 +722,7 @@ console.log(cleanedData)
           .on("end", () => {
             // After processing all records, perform the bulk insert
             if (bulkOps.length > 0) {
-              collection
+              mainDataCollection
                 .bulkWrite(bulkOps)
                 .then(() => {
                   resolve();
@@ -1072,3 +929,4 @@ app.put("/updateUserPermissions/:id", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+startServer();
