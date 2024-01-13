@@ -431,6 +431,13 @@ console.log(endDate);
   if (!isNaN(zetacode)) {
     query.Zetacode = zetacode;
   }
+  if (queryParams.floorNumber) {
+    query.FloorNumber = parseInt(queryParams.floorNumber, 10);
+  } else if (queryParams.emptyFloor) {
+
+    query.FloorNumber = { $in: [null, undefined] };
+  }
+
 
   return query;
 }
