@@ -14,11 +14,12 @@ const fastcsv = require("fast-csv");
 const jwt = require("jsonwebtoken");
 const stream = require("stream");
 let mainDataCollection;
-
+let userDataCollection;
 async function startServer() {
   try {
     const db = await dbManager.connectToDatabase();
     mainDataCollection = db.collection("maindatas");
+    userDataCollection = db.collection("users");
 
     app.listen(9050, () => {
       console.log("Server running on port 9050");
@@ -106,7 +107,7 @@ app.post("/auth/signin", async (req, res) => {
 
   try {
     // Find the user by username in the database
-    const user = await User.findOne({ username });
+    const user = await userDataCollection.findOne({ username });
 
     if (user) {
       const isMatch = await bcrypt.compare(password, user.password);
@@ -162,7 +163,7 @@ app.post("/auth/refresh", async (req, res) => {
     }
 
     // Check if the user exists in the database
-    const user = await User.findOne({ username: decoded.username });
+    const user = await userDataCollection.findOne({ username: decoded.username });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -196,7 +197,7 @@ app.post("/auth/changepassword", isAuthenticated, async (req, res) => {
 
   try {
     // Find the user by username in the database
-    const user = await User.findOne({ username });
+    const user = await userDataCollection.findOne({ username });
 
     if (user) {
       // Compare the provided current password with the stored bcrypt hash
@@ -795,7 +796,7 @@ app.post("/createUser", isAuthenticated, async (req, res) => {
 
   try {
     // Check if the username already exists
-    const existingUser = await User.findOne({ username });
+    const existingUser = await userDataCollection.findOne({ username });
     if (existingUser) {
       return res.status(400).json({ message: "Username already exists" });
     }
@@ -804,7 +805,7 @@ app.post("/createUser", isAuthenticated, async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the user with hashed password and initialized session object
-    const newUser = new User({
+    const newUser = await userDataCollection.insertOne({
       username,
       password: hashedPassword,
       permission,
@@ -817,8 +818,6 @@ app.post("/createUser", isAuthenticated, async (req, res) => {
       },
     });
 
-    // Save the user to the database
-    await newUser.save();
 
     res.json({ message: "User created successfully" });
   } catch (error) {
@@ -832,13 +831,13 @@ app.delete("/deleteUser", isAuthenticated, isAdmin, async (req, res) => {
 
   try {
     // Check if the user to delete exists
-    const userToDelete = await User.findOne({ username: usernameToDelete });
+    const userToDelete = await userDataCollection.findOne({ username: usernameToDelete });
     if (!userToDelete) {
       return res.status(404).json({ message: "User not found" });
     }
 
     // Perform the delete operation
-    await User.deleteOne({ username: usernameToDelete });
+    await userDataCollection.deleteOne({ username: usernameToDelete });
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
@@ -852,7 +851,7 @@ app.put("/editUserPermission", isAuthenticated, isAdmin, async (req, res) => {
 
   try {
     // Check if the user to edit exists
-    const userToEdit = await User.findOne({ username: usernameToEdit });
+    const userToEdit = await userDataCollection.findOne({ username: usernameToEdit });
     if (!userToEdit) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -873,7 +872,7 @@ app.get("/fetchUsers", isAuthenticated, async (req, res) => {
 
   try {
     // Fetch all documents except the one with the same username as the logged-in user
-    const users = await User.find(
+    const users = await userDataCollection.find(
       { username: { $ne: loggedInUsername } },
       { username: 1, permission: 1 }
     );
@@ -895,7 +894,7 @@ app.get("/getUser/:id", isAuthenticated, async (req, res) => {
     }
 
     // Find the user by _id in the database
-    const user = await User.findOne(
+    const user = await userDataCollection.findOne(
       { _id: new ObjectId(userId) },
       { password: 0 }
     );
@@ -928,7 +927,7 @@ app.put("/updateUserPermissions/:id", isAuthenticated, async (req, res) => {
     }
 
     // Update user permissions in the database
-    const updatedUser = await User.findOneAndUpdate(
+    const updatedUser = await userDataCollection.findOneAndUpdate(
       { _id: new ObjectId(userId) },
       { $set: { permission: newPermissions } },
       { new: true, projection: { password: 0 } }
