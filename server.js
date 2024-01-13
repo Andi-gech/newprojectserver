@@ -664,8 +664,8 @@ console.log(cleanedData)
     
       formattedDate = null;
     }
-    const validValues = ['yes', 'y', 'true'];
-    const invalidValues = ['no', 'n', 'false'];
+    const validValues = ['yes', 'y', 'true','set'];
+    const invalidValues = ['no', 'n', 'false',"notset"];
 
     const rowWithUsername = {
       ...data,
