@@ -246,6 +246,7 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
 
     const query = buildQuery(req.query);
 
+
     console.log("Query:", query);
 
     const data = await mainDataCollection
@@ -253,21 +254,20 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
       .toArray();
 
   
-    const formattedData = data.map(item => {
-      return {
-        Location: item.Location, 
-        Zetacode: item.Zetacode, 
-        ...item,
-        IPS: item.IPS?"yes":"no",
-        TapNotSet: item.TapNotSet?"yes":"no",
-        TMVFail: item.TMVFail?"yes":"no",
-        PreflushSampleTaken: item.PreflushSampleTaken?"yes":"no",
-        PostflushSampleTaken: item.PostflushSampleTaken?"yes":"no",
+      const formattedData = data.map(item => {
+        return {
+          Location: item.Location, 
+          Zetacode: item.Zetacode, 
+          ...item,
+          IPS: item.IPS ? "yes" : item.IPS === false ? "no" : "",
+          TapNotSet: item.TapNotSet ? "yes" : item.TapNotSet === false ? "no" : "",
+          TMVFail: item.TMVFail ? "yes" : item.TMVFail === false ? "no" : "",
+          PreflushSampleTaken: item.PreflushSampleTaken ? "yes" : item.PreflushSampleTaken === false ? "no" : "",
+          PostflushSampleTaken: item.PostflushSampleTaken ? "yes" : item.PostflushSampleTaken === false ? "no" : "",
+          Date: item.Date ? moment(item.Date).format('YYYY-MM-DD') : null,
+        };
+      });
       
-        Date: item.Date ? moment(item.Date).format('YYYY-MM-DD') : null,
-     
-      };
-    });
 
 
 
@@ -665,31 +665,37 @@ console.log(cleanedData)
       formattedDate = null;
     }
     const validValues = ['yes', 'y', 'true'];
+    const invalidValues = ['no', 'n', 'false'];
 
-            const rowWithUsername = {
-              ...data,
-              Location: cleanedData.location,
-              Zetacode: parseInt(cleanedData.zetacode),
-              Room: cleanedData.room,
-              HelpDeskReference: cleanedData.helpdeskreference,
-              IPS:validValues.includes(cleanedData?.ips?.trim()?.toLowerCase())?true:false,
-              Fault: cleanedData.fault,
-              Date: formattedDate,
-              HotTemperature: parseFloat(cleanedData.hottemperature),
-              HotFlow: parseFloat(cleanedData.hotflow),
-              HotReturn: parseFloat(cleanedData.hotreturn),
-              ColdTemperature: parseFloat(cleanedData.coldtemperature),
-              ColdFlow: parseFloat(cleanedData.coldflow),
-              ColdReturn: parseFloat(cleanedData.coldreturn),
-              HotFlushTemperature: parseFloat(cleanedData.hotflushtemperature),
-              TapNotSet:validValues.includes(cleanedData?.tapnotset?.trim()?.toLowerCase())?true:false ,
-              ColdFlushTemperature: parseFloat(cleanedData.coldflushtemperature),
-              TMVFail: validValues.includes(cleanedData?.tmvfail?.trim()?.toLowerCase())?true:false ,
-              PreflushSampleTaken: validValues.includes(cleanedData?.preflushsampletaken?.trim()?.toLowerCase())?true:false,
-              PostflushSampleTaken:  validValues.includes(cleanedData?.postflushsampletaken?.trim()?.toLowerCase())?true:false,
-              ThermalFlush: cleanedData.thermalflush,
-            };
-
+    const rowWithUsername = {
+      ...data,
+      Location: cleanedData.location,
+      Zetacode: parseInt(cleanedData.zetacode),
+      Room: cleanedData.room,
+      HelpDeskReference: cleanedData.helpdeskreference,
+      IPS: validValues.includes(cleanedData?.ips?.trim()?.toLowerCase()) ? true : 
+           invalidValues.includes(cleanedData?.ips?.trim()?.toLowerCase()) ? false : '',
+      Fault: cleanedData.fault,
+      Date: formattedDate,
+      HotTemperature: parseFloat(cleanedData.hottemperature),
+      HotFlow: parseFloat(cleanedData.hotflow),
+      HotReturn: parseFloat(cleanedData.hotreturn),
+      ColdTemperature: parseFloat(cleanedData.coldtemperature),
+      ColdFlow: parseFloat(cleanedData.coldflow),
+      ColdReturn: parseFloat(cleanedData.coldreturn),
+      HotFlushTemperature: parseFloat(cleanedData.hotflushtemperature),
+      TapNotSet: validValues.includes(cleanedData?.tapnotset?.trim()?.toLowerCase()) ? true :
+                 invalidValues.includes(cleanedData?.tapnotset?.trim()?.toLowerCase()) ? false : '',
+      ColdFlushTemperature: parseFloat(cleanedData.coldflushtemperature),
+      TMVFail: validValues.includes(cleanedData?.tmvfail?.trim()?.toLowerCase()) ? true :
+               invalidValues.includes(cleanedData?.tmvfail?.trim()?.toLowerCase()) ? false : '',
+      PreflushSampleTaken: validValues.includes(cleanedData?.preflushsampletaken?.trim()?.toLowerCase()) ? true :
+                          invalidValues.includes(cleanedData?.preflushsampletaken?.trim()?.toLowerCase()) ? false : '',
+      PostflushSampleTaken: validValues.includes(cleanedData?.postflushsampletaken?.trim()?.toLowerCase()) ? true :
+                            invalidValues.includes(cleanedData?.postflushsampletaken?.trim()?.toLowerCase()) ? false : '',
+      ThermalFlush: cleanedData.thermalflush,
+    };
+    
               bulkOps.push({ insertOne: { document: rowWithUsername } });
 
               successCount++;
