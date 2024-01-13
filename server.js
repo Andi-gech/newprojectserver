@@ -649,7 +649,7 @@ app.post(
 const cleanedData = {};
 for (const key in data) {
   if (data.hasOwnProperty(key)) {
-    const cleanedKey = key.replace(/\s+/g, '').toLowerCase();
+    const cleanedKey = key.replace(/\s+/g, '');
     cleanedData[cleanedKey] = data[key];
   }
 }
@@ -668,32 +668,33 @@ console.log(cleanedData)
     const invalidValues = ['no', 'n', 'false',"notset"];
 
     const rowWithUsername = {
-      ...data,
-      Location: cleanedData.location,
-      Zetacode: parseInt(cleanedData.zetacode),
-      Room: cleanedData.room,
-      HelpDeskReference: cleanedData.helpdeskreference,
-      IPS: validValues.includes(cleanedData?.ips?.trim()?.toLowerCase()) ? true : 
-           invalidValues.includes(cleanedData?.ips?.trim()?.toLowerCase()) ? false : '',
-      Fault: cleanedData.fault,
+      ...cleanedData,
+      Location: cleanedData.Location,
+      Zetacode: parseInt(cleanedData.Zetacode),
+      Room: cleanedData.Room,
+      Floor:cleanedData.Floor,
+      HelpDeskReference: cleanedData.HelpDeskReference,
+      IPS: validValues.includes(cleanedData?.IPS?.trim()?.toLowerCase()) ? true : 
+           invalidValues.includes(cleanedData?.IPS?.trim()?.toLowerCase()) ? false : '',
+      Fault: cleanedData.Fault,
       Date: formattedDate,
-      HotTemperature: parseFloat(cleanedData.hottemperature),
-      HotFlow: parseFloat(cleanedData.hotflow),
-      HotReturn: parseFloat(cleanedData.hotreturn),
-      ColdTemperature: parseFloat(cleanedData.coldtemperature),
-      ColdFlow: parseFloat(cleanedData.coldflow),
-      ColdReturn: parseFloat(cleanedData.coldreturn),
-      HotFlushTemperature: parseFloat(cleanedData.hotflushtemperature),
-      TapNotSet: validValues.includes(cleanedData?.tapnotset?.trim()?.toLowerCase()) ? true :
-                 invalidValues.includes(cleanedData?.tapnotset?.trim()?.toLowerCase()) ? false : '',
-      ColdFlushTemperature: parseFloat(cleanedData.coldflushtemperature),
-      TMVFail: validValues.includes(cleanedData?.tmvfail?.trim()?.toLowerCase()) ? true :
-               invalidValues.includes(cleanedData?.tmvfail?.trim()?.toLowerCase()) ? false : '',
-      PreflushSampleTaken: validValues.includes(cleanedData?.preflushsampletaken?.trim()?.toLowerCase()) ? true :
-                          invalidValues.includes(cleanedData?.preflushsampletaken?.trim()?.toLowerCase()) ? false : '',
-      PostflushSampleTaken: validValues.includes(cleanedData?.postflushsampletaken?.trim()?.toLowerCase()) ? true :
-                            invalidValues.includes(cleanedData?.postflushsampletaken?.trim()?.toLowerCase()) ? false : '',
-      ThermalFlush: cleanedData.thermalflush,
+      HotTemperature: parseFloat(cleanedData.HotTemperature),
+      HotFlow: parseFloat(cleanedData.HotFlow),
+      HotReturn: parseFloat(cleanedData.HotReturn),
+      ColdTemperature: parseFloat(cleanedData.ColdTemperature),
+      ColdFlow: parseFloat(cleanedData.ColdFlow),
+      ColdReturn: parseFloat(cleanedData.ColdReturn),
+      HotFlushTemperature: parseFloat(cleanedData.HotFlushTemperature),
+      TapNotSet: validValues.includes(cleanedData?.TapNotSet?.trim()?.toLowerCase()) ? true :
+                 invalidValues.includes(cleanedData?.TapNotSet?.trim()?.toLowerCase()) ? false : '',
+      ColdFlushTemperature: parseFloat(cleanedData.ColdFlushTemperature),
+      TMVFail: validValues.includes(cleanedData?.TMVFail?.trim()?.toLowerCase()) ? true :
+               invalidValues.includes(cleanedData?.TMVFail?.trim()?.toLowerCase()) ? false : '',
+      PreflushSampleTaken: validValues.includes(cleanedData?.PreflushSampleTaken?.trim()?.toLowerCase()) ? true :
+                          invalidValues.includes(cleanedData?.PreflushSampleTaken?.trim()?.toLowerCase()) ? false : '',
+      PostflushSampleTaken: validValues.includes(cleanedData?.PostflushSampleTaken?.trim()?.toLowerCase()) ? true :
+                            invalidValues.includes(cleanedData?.PostflushSampleTaken?.trim()?.toLowerCase()) ? false : '',
+      ThermalFlush: cleanedData.ThermalFlush,
     };
     
               bulkOps.push({ insertOne: { document: rowWithUsername } });

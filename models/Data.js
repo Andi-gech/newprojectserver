@@ -4,6 +4,7 @@ const mainDataStore = new mongoose.Schema({
   Location: { type: String},
   Zetacode: { type: Number },
   Room: { type: String},
+  Floor: { type: Number},
   HelpDeskReference: { type: String},
   IPS: { type: Boolean },
   Fault: { type: String},
