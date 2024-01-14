@@ -70,8 +70,8 @@ const isAuthenticated = (req, res, next) => {
 
 // Middleware to check role
 const canEdit = (req, res, next) => {
-  if (req.session && req.session.authenticated) {
-    const loggedInUserPermission = req.session.permission;
+  
+    const loggedInUserPermission = req.permission;
     if (
       loggedInUserPermission !== "admin" ||
       loggedInUserPermission !== "editor"
@@ -82,7 +82,7 @@ const canEdit = (req, res, next) => {
     } else {
       next();
     }
-  }
+  
 };
 
 // Middleware to verify admin role
@@ -223,7 +223,7 @@ app.post("/auth/changepassword", isAuthenticated, async (req, res) => {
   }
 });
 
-app.post("/adddata", isAuthenticated, async (req, res) => {
+app.post("/adddata", isAuthenticated,canEdit, async (req, res) => {
   const data = req.body;
 
   try {
@@ -472,7 +472,7 @@ app.get("/getsingledata/:id", isAuthenticated, async (req, res) => {
 
 
 
-app.delete("/deletedata", isAuthenticated, async (req, res) => {
+app.delete("/deletedata", isAuthenticated,canEdit, async (req, res) => {
   const { id } = req.body;
 
   if (!ObjectId.isValid(id)) {
@@ -498,7 +498,7 @@ app.delete("/deletedata", isAuthenticated, async (req, res) => {
 });
 
 
-app.put("/updatedata", isAuthenticated, async (req, res) => {
+app.put("/updatedata", isAuthenticated,canEdit, async (req, res) => {
   const { id, newData } = req.body;
 
   if (!id || !newData) {
@@ -537,7 +537,7 @@ app.put("/updatedata", isAuthenticated, async (req, res) => {
   }
 });
 
-app.put("/updatedataTable", async (req, res) => {
+app.put("/updatedataTable",isAuthenticated,canEdit, async (req, res) => {
   const newFielddata = req.body.newFielddata;
 
   try {
@@ -582,7 +582,7 @@ app.put("/updatedataTable", async (req, res) => {
   }
 });
 
-app.delete("/deleteColumn/:columnName", async (req, res) => {
+app.delete("/deleteColumn/:columnName",isAuthenticated,canEdit, async (req, res) => {
   const columnName = req.params.columnName;
 
   try {
@@ -618,7 +618,7 @@ app.delete("/deleteColumn/:columnName", async (req, res) => {
 
 app.post(
   "/importcsv",
-  isAuthenticated,
+  isAuthenticated,canEdit,
   upload.single("file"),
   async (req, res) => {
     let successCount = 0;
@@ -790,7 +790,7 @@ console.log(cleanedData)
   }
 );
 
-app.post("/createUser", isAuthenticated, async (req, res) => {
+app.post("/createUser", isAuthenticated,isAdmin, async (req, res) => {
   const { username, password, permission } = req.body;
 
   try {
@@ -867,7 +867,7 @@ app.put("/editUserPermission", isAuthenticated, isAdmin, async (req, res) => {
   }
 });
 
-app.get("/fetchUsers", isAuthenticated, async (req, res) => {
+app.get("/fetchUsers", isAuthenticated,isAdmin, async (req, res) => {
   const loggedInUsername = req.user.username;
 
   try {
@@ -884,7 +884,7 @@ app.get("/fetchUsers", isAuthenticated, async (req, res) => {
   }
 });
 
-app.get("/getUser/:id", isAuthenticated, async (req, res) => {
+app.get("/getUser/:id", isAuthenticated,isAdmin, async (req, res) => {
   const userId = req.params.id;
 
   try {
@@ -909,7 +909,7 @@ app.get("/getUser/:id", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-app.put("/updateUserPermissions/:id", isAuthenticated, async (req, res) => {
+app.put("/updateUserPermissions/:id", isAuthenticated,isAdmin, async (req, res) => {
   const userId = req.params.id;
   const newPermissions = req.body.permissions;
 
