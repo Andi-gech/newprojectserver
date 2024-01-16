@@ -71,7 +71,7 @@ const isAuthenticated = (req, res, next) => {
 // Middleware to check role
 const canEdit = (req, res, next) => {
   
-    const loggedInUserPermission = req.permission;
+    const loggedInUserPermission = req.user.permission;
     if (
       loggedInUserPermission !== "admin" ||
       loggedInUserPermission !== "editor"
