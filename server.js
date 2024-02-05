@@ -1,10 +1,10 @@
 const express = require("express");
-const dbManager =  require("./db/db.js");
-const { MongoClient, MongoError, ObjectId } = require("mongodb");
-const crypto = require("crypto");
+const dbManager =  require("./db.js");
+const { MongoError, ObjectId } = require("mongodb");
+
 const bcrypt = require("bcrypt");
 const app = express();
-const User = require('./models/Users');
+
 const multer = require('multer');
 const moment = require('moment');
 const csv = require('csv-parser');
@@ -73,7 +73,7 @@ const canEdit = (req, res, next) => {
   
     const loggedInUserPermission = req.user.permission;
     if (
-      loggedInUserPermission !== "admin" ||
+      loggedInUserPermission !== "admin" &&
       loggedInUserPermission !== "editor"
     ) {
       return res
@@ -223,7 +223,7 @@ app.post("/auth/changepassword", isAuthenticated, async (req, res) => {
   }
 });
 
-app.post("/adddata", isAuthenticated,canEdit, async (req, res) => {
+app.post("/adddata", [isAuthenticated,canEdit], async (req, res) => {
   const data = req.body;
 
   try {
@@ -541,7 +541,7 @@ app.put("/updatedataTable",isAuthenticated,canEdit, async (req, res) => {
   const newFielddata = req.body.newFielddata;
 
   try {
-    // Check if newFielddata is null or undefined
+   
     if (!newFielddata) {
       return res
         .status(400)
