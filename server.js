@@ -472,7 +472,7 @@ app.get("/getsingledata/:id", isAuthenticated, async (req, res) => {
 
 
 
-app.delete("/deletedata", isAuthenticated,canEdit, async (req, res) => {
+app.delete("/deletedata", [isAuthenticated,canEdit], async (req, res) => {
   const { id } = req.body;
 
   if (!ObjectId.isValid(id)) {
@@ -498,7 +498,7 @@ app.delete("/deletedata", isAuthenticated,canEdit, async (req, res) => {
 });
 
 
-app.put("/updatedata", isAuthenticated,canEdit, async (req, res) => {
+app.put("/updatedata", [isAuthenticated,canEdit], async (req, res) => {
   const { id, newData } = req.body;
 
   if (!id || !newData) {
@@ -537,7 +537,7 @@ app.put("/updatedata", isAuthenticated,canEdit, async (req, res) => {
   }
 });
 
-app.put("/updatedataTable",isAuthenticated,canEdit, async (req, res) => {
+app.put("/updatedataTable",[isAuthenticated,canEdit], async (req, res) => {
   const newFielddata = req.body.newFielddata;
 
   try {
@@ -582,7 +582,7 @@ app.put("/updatedataTable",isAuthenticated,canEdit, async (req, res) => {
   }
 });
 
-app.delete("/deleteColumn/:columnName",isAuthenticated,canEdit, async (req, res) => {
+app.delete("/deleteColumn/:columnName",[isAuthenticated,canEdit], async (req, res) => {
   const columnName = req.params.columnName;
 
   try {
@@ -618,7 +618,7 @@ app.delete("/deleteColumn/:columnName",isAuthenticated,canEdit, async (req, res)
 
 app.post(
   "/importcsv",
-  isAuthenticated,canEdit,
+  [isAuthenticated,canEdit],
   upload.single("file"),
   async (req, res) => {
     let successCount = 0;
