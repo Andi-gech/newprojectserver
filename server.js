@@ -1,13 +1,13 @@
 const express = require("express");
-const dbManager =  require("./db.js");
+const dbManager = require("./db.js");
 const { MongoError, ObjectId } = require("mongodb");
 
 const bcrypt = require("bcrypt");
 const app = express();
 
-const multer = require('multer');
-const moment = require('moment');
-const csv = require('csv-parser');
+const multer = require("multer");
+const moment = require("moment");
+const csv = require("csv-parser");
 const ExcelJS = require("exceljs");
 const cors = require("cors");
 const fastcsv = require("fast-csv");
@@ -30,12 +30,11 @@ async function startServer() {
 }
 
 // const secretKey = crypto.randomBytes(64).toString("hex");
-const storage = multer.memoryStorage(); 
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 const currentTime = new Date();
 // const expirationTime = new Date(currentTime.getTime() + 60 * 60 * 1000);
-
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -70,34 +69,28 @@ const isAuthenticated = (req, res, next) => {
 
 // Middleware to check role
 const canEdit = (req, res, next) => {
-  
-    const loggedInUserPermission = req.user.permission;
-    if (
-      loggedInUserPermission !== "admin" &&
-      loggedInUserPermission !== "editor"
-    ) {
-      return res
-        .status(403)
-        .json({ message: "Only admins and editors have this privilege" });
-    } else {
-      next();
-    }
-  
+  const loggedInUserPermission = req.user.permission;
+  if (
+    loggedInUserPermission !== "admin" &&
+    loggedInUserPermission !== "editor"
+  ) {
+    return res
+      .status(403)
+      .json({ message: "Only admins and editors have this privilege" });
+  } else {
+    next();
+  }
 };
 
 // Middleware to verify admin role
 const isAdmin = (req, res, next) => {
- 
-    const loggedInUserPermission = req.user.permission;
-    // Check if the logged-in user has admin permissions
-    if (loggedInUserPermission !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Only admins has this privilege" });
-    } else {
-      next();
-    }
-  
+  const loggedInUserPermission = req.user.permission;
+  // Check if the logged-in user has admin permissions
+  if (loggedInUserPermission !== "admin") {
+    return res.status(403).json({ message: "Only admins has this privilege" });
+  } else {
+    next();
+  }
 };
 
 // Sign-in route
@@ -163,7 +156,9 @@ app.post("/auth/refresh", async (req, res) => {
     }
 
     // Check if the user exists in the database
-    const user = await userDataCollection.findOne({ username: decoded.username });
+    const user = await userDataCollection.findOne({
+      username: decoded.username,
+    });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -188,7 +183,6 @@ app.post("/auth/refresh", async (req, res) => {
   });
 });
 
-
 app.post("/auth/changepassword", isAuthenticated, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -208,7 +202,10 @@ app.post("/auth/changepassword", isAuthenticated, async (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         // Update the user's password in the user document
-        await userDataCollection.updateOne({ username }, { $set: { password: hashedPassword } });
+        await userDataCollection.updateOne(
+          { username },
+          { $set: { password: hashedPassword } }
+        );
 
         res.json({ message: "Password changed successfully" });
       } else {
@@ -223,15 +220,11 @@ app.post("/auth/changepassword", isAuthenticated, async (req, res) => {
   }
 });
 
-app.post("/adddata", [isAuthenticated,canEdit], async (req, res) => {
+app.post("/adddata", [isAuthenticated, canEdit], async (req, res) => {
   const data = req.body;
 
   try {
-    
-
     await mainDataCollection.insertOne(data);
-
- 
 
     res.json({ message: "Data added successfully" });
   } catch (error) {
@@ -242,10 +235,7 @@ app.post("/adddata", [isAuthenticated,canEdit], async (req, res) => {
 
 app.get("/getdata", isAuthenticated, async (req, res) => {
   try {
-  
-
     const query = buildQuery(req.query);
-
 
     console.log("Query:", query);
 
@@ -253,23 +243,31 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
       .find(query, { projection: { additionalData: 0 } })
       .toArray();
 
-  
-      const formattedData = data.map(item => {
-        return {
-          Location: item.Location, 
-          Zetacode: item.Zetacode, 
-          ...item,
-          IPS: item.IPS ? "yes" : item.IPS === false ? "no" : "",
-          TapNotSet: item.TapNotSet ? "yes" : item.TapNotSet === false ? "no" : "",
-          TMVFail: item.TMVFail ? "yes" : item.TMVFail === false ? "no" : "",
-          PreflushSampleTaken: item.PreflushSampleTaken ? "yes" : item.PreflushSampleTaken === false ? "no" : "",
-          PostflushSampleTaken: item.PostflushSampleTaken ? "yes" : item.PostflushSampleTaken === false ? "no" : "",
-          Date: item.Date ? moment(item.Date).format('YYYY-MM-DD') : null,
-        };
-      });
-      
-
-
+    const formattedData = data.map((item) => {
+      return {
+        Location: item.Location,
+        Zetacode: item.Zetacode,
+        ...item,
+        IPS: item.IPS ? "yes" : item.IPS === false ? "no" : "",
+        TapNotSet: item.TapNotSet
+          ? "yes"
+          : item.TapNotSet === false
+          ? "no"
+          : "",
+        TMVFail: item.TMVFail ? "yes" : item.TMVFail === false ? "no" : "",
+        PreflushSampleTaken: item.PreflushSampleTaken
+          ? "yes"
+          : item.PreflushSampleTaken === false
+          ? "no"
+          : "",
+        PostflushSampleTaken: item.PostflushSampleTaken
+          ? "yes"
+          : item.PostflushSampleTaken === false
+          ? "no"
+          : "",
+        Date: item.Date ? moment(item.Date).format("YYYY-MM-DD") : null,
+      };
+    });
 
     res.json(formattedData);
   } catch (error) {
@@ -278,24 +276,19 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
   }
 });
 
-
 app.get("/generateCSV", isAuthenticated, async (req, res) => {
   try {
-
-    
     const query = buildQuery(req.query);
 
     const data = await mainDataCollection
       .find(query, { projection: { _id: 0 } })
       .toArray();
-    const formattedData = data.map(item => {
-        return {
-          ...item,
-          Date: item.Date ? moment(item.Date).format('YYYY-MM-DD') : null,
-          
-        };
-      });
-  
+    const formattedData = data.map((item) => {
+      return {
+        ...item,
+        Date: item.Date ? moment(item.Date).format("YYYY-MM-DD") : null,
+      };
+    });
 
     // Collect unique headers from all rows
     const uniqueHeadersSet = new Set();
@@ -324,8 +317,6 @@ app.get("/generateCSV", isAuthenticated, async (req, res) => {
 
     // End the stream to finish the response
     csvStream.end();
-
-   
   } catch (error) {
     console.error("Error while generating CSV file:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -333,15 +324,11 @@ app.get("/generateCSV", isAuthenticated, async (req, res) => {
 });
 app.get("/generateExcel", isAuthenticated, async (req, res) => {
   try {
-
-   
     const query = buildQuery(req.query);
 
     const data = await mainDataCollection
       .find(query, { projection: { _id: 0 } })
       .toArray();
-
-
 
     // Check if any data was found
     if (data.length === 0) {
@@ -411,16 +398,14 @@ function buildQuery(queryParams) {
   addRangeQuery("ColdTemperature", "minColdTemperature", "maxColdTemperature");
 
   console.log(queryParams.startDate);
-console.log(queryParams.endDate);
+  console.log(queryParams.endDate);
 
-const startDate = moment(queryParams.startDate, 'YYYY-MM-DD').toDate();
-const endDate = moment(queryParams.endDate, 'YYYY-MM-DD').toDate();
+  const startDate = moment(queryParams.startDate, "YYYY-MM-DD").toDate();
+  const endDate = moment(queryParams.endDate, "YYYY-MM-DD").toDate();
 
-console.log(startDate);
-console.log(endDate);
+  console.log(startDate);
+  console.log(endDate);
   if (!isNaN(startDate) && !isNaN(endDate)) {
-
-
     query.Date = { $gte: startDate, $lte: endDate };
   } else {
     console.error("Invalid startDate or endDate");
@@ -432,12 +417,10 @@ console.log(endDate);
     query.Zetacode = zetacode;
   }
   if (queryParams.floorNumber) {
-    query.Floor= parseInt(queryParams.floorNumber, 10);
+    query.Floor = parseInt(queryParams.floorNumber, 10);
   } else if (queryParams.emptyFloor) {
-
-    query.Floor= { $in: [null, undefined] };
+    query.Floor = { $in: [null, undefined] };
   }
-
 
   return query;
 }
@@ -450,14 +433,10 @@ app.get("/getsingledata/:id", isAuthenticated, async (req, res) => {
   }
 
   try {
-   
-
     const data = await mainDataCollection.findOne(
       { _id: new ObjectId(documentId) },
       { projection: { _id: 0 } }
     );
-
-   
 
     if (data) {
       return res.json({ data: data });
@@ -470,9 +449,7 @@ app.get("/getsingledata/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-
-
-app.delete("/deletedata", [isAuthenticated,canEdit], async (req, res) => {
+app.delete("/deletedata", [isAuthenticated, canEdit], async (req, res) => {
   const { id } = req.body;
 
   if (!ObjectId.isValid(id)) {
@@ -480,11 +457,10 @@ app.delete("/deletedata", [isAuthenticated,canEdit], async (req, res) => {
   }
 
   try {
-   
-    const result = await mainDataCollection.deleteOne({ _id: new ObjectId(id) });
+    const result = await mainDataCollection.deleteOne({
+      _id: new ObjectId(id),
+    });
     console.log(result);
-
-  
 
     if (result.deletedCount === 1) {
       res.json({ message: "Data deleted successfully" });
@@ -497,8 +473,7 @@ app.delete("/deletedata", [isAuthenticated,canEdit], async (req, res) => {
   }
 });
 
-
-app.put("/updatedata", [isAuthenticated,canEdit], async (req, res) => {
+app.put("/updatedata", [isAuthenticated, canEdit], async (req, res) => {
   const { id, newData } = req.body;
 
   if (!id || !newData) {
@@ -512,7 +487,6 @@ app.put("/updatedata", [isAuthenticated,canEdit], async (req, res) => {
   }
 
   try {
-   
     const query = { _id: new ObjectId(id) };
 
     if (newData._id) {
@@ -520,7 +494,6 @@ app.put("/updatedata", [isAuthenticated,canEdit], async (req, res) => {
     }
 
     const result = await mainDataCollection.updateOne(query, { $set: newData });
-
 
     if (result.matchedCount === 1) {
       res.json({ message: "Data updated successfully" });
@@ -537,30 +510,22 @@ app.put("/updatedata", [isAuthenticated,canEdit], async (req, res) => {
   }
 });
 
-app.put("/updatedataTable",[isAuthenticated,canEdit], async (req, res) => {
+app.put("/updatedataTable", [isAuthenticated, canEdit], async (req, res) => {
   const newFielddata = req.body.newFielddata;
 
   try {
-   
     if (!newFielddata) {
-      return res
-        .status(400)
-        .json({
-          message: "Invalid request. newFielddata is null or undefined.",
-        });
+      return res.status(400).json({
+        message: "Invalid request. newFielddata is null or undefined.",
+      });
     }
 
     // Check if newFielddata contains any fields
     if (Object.keys(newFielddata).length === 0) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Invalid request. newFielddata must contain fields to update.",
-        });
+      return res.status(400).json({
+        message: "Invalid request. newFielddata must contain fields to update.",
+      });
     }
-
-    
 
     // Specify the query to match all documents (empty query)
     const query = {};
@@ -571,8 +536,6 @@ app.put("/updatedataTable",[isAuthenticated,canEdit], async (req, res) => {
     // Update all documents in the collection
     const result = await mainDataCollection.updateMany(query, updateOperation);
 
-
-
     if (result) {
       res.json({ message: "Data updated successfully" });
     }
@@ -582,43 +545,43 @@ app.put("/updatedataTable",[isAuthenticated,canEdit], async (req, res) => {
   }
 });
 
-app.delete("/deleteColumn/:columnName",[isAuthenticated,canEdit], async (req, res) => {
-  const columnName = req.params.columnName;
+app.delete(
+  "/deleteColumn/:columnName",
+  [isAuthenticated, canEdit],
+  async (req, res) => {
+    const columnName = req.params.columnName;
 
-  try {
-    // Check if columnName is null or undefined
-    if (!columnName) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request. columnName is null or undefined." });
+    try {
+      // Check if columnName is null or undefined
+      if (!columnName) {
+        return res
+          .status(400)
+          .json({
+            message: "Invalid request. columnName is null or undefined.",
+          });
+      }
+
+      // Specify the update operation to remove a field
+      const updateOperation = { $unset: { [columnName]: 1 } };
+
+      // Update all documents in the collection
+      const result = await mainDataCollection.updateMany({}, updateOperation);
+
+      if (result.modifiedCount > 0) {
+        res.json({ message: `Column '${columnName}' deleted successfully` });
+      } else {
+        res.status(404).json({ message: `Column '${columnName}' not found` });
+      }
+    } catch (error) {
+      console.error("Error while deleting column:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-
-    
-
-    // Specify the update operation to remove a field
-    const updateOperation = { $unset: { [columnName]: 1 } };
-
-    // Update all documents in the collection
-    const result = await mainDataCollection.updateMany({}, updateOperation);
-
-   
-
-    if (result.modifiedCount > 0) {
-      res.json({ message: `Column '${columnName}' deleted successfully` });
-    } else {
-      res.status(404).json({ message: `Column '${columnName}' not found` });
-    }
-  } catch (error) {
-    console.error("Error while deleting column:", error);
-    res.status(500).json({ message: "Internal server error" });
   }
-});
-
-
+);
 
 app.post(
   "/importcsv",
-  [isAuthenticated,canEdit],
+  [isAuthenticated, canEdit],
   upload.single("file"),
   async (req, res) => {
     let successCount = 0;
@@ -652,58 +615,94 @@ app.post(
           .pipe(csv())
           .on("data", async (data) => {
             try {
+              const cleanedData = {};
+              for (const key in data) {
+                if (data.hasOwnProperty(key)) {
+                  const cleanedKey = key.replace(/\s+/g, "");
+                  cleanedData[cleanedKey] = data[key];
+                }
+              }
 
-const cleanedData = {};
-for (const key in data) {
-  if (data.hasOwnProperty(key)) {
-    const cleanedKey = key.replace(/\s+/g, '');
-    cleanedData[cleanedKey] = data[key];
-  }
-}
+              console.log(cleanedData);
 
-console.log(cleanedData)
+              let formattedDate;
+              if (data.Date) {
+                formattedDate = moment(data.Date, "M/D/YYYY").toDate();
+              } else {
+                formattedDate = null;
+              }
+              const validValues = ["yes", "y", "true", "set"];
+              const invalidValues = ["no", "n", "false", "notset"];
 
+              const rowWithUsername = {
+                ...cleanedData,
+                Location: cleanedData.Location,
+                Zetacode: parseInt(cleanedData.Zetacode),
+                Room: cleanedData.Room,
+                Floor: parseInt(cleanedData.Floor),
+                HelpDeskReference: cleanedData.HelpDeskReference,
+                IPS: validValues.includes(
+                  cleanedData?.IPS?.trim()?.toLowerCase()
+                )
+                  ? true
+                  : invalidValues.includes(
+                      cleanedData?.IPS?.trim()?.toLowerCase()
+                    )
+                  ? false
+                  : "",
+                Fault: cleanedData.Fault,
+                Date: formattedDate,
+                HotTemperature: parseFloat(cleanedData.HotTemperature),
+                HotFlow: parseFloat(cleanedData.HotFlow),
+                HotReturn: parseFloat(cleanedData.HotReturn),
+                ColdTemperature: parseFloat(cleanedData.ColdTemperature),
+                ColdFlow: parseFloat(cleanedData.ColdFlow),
+                ColdReturn: parseFloat(cleanedData.ColdReturn),
+                HotFlushTemperature: parseFloat(
+                  cleanedData.HotFlushTemperature
+                ),
+                TapNotSet: validValues.includes(
+                  cleanedData?.TapNotSet?.trim()?.toLowerCase()
+                )
+                  ? true
+                  : invalidValues.includes(
+                      cleanedData?.TapNotSet?.trim()?.toLowerCase()
+                    )
+                  ? false
+                  : "",
+                ColdFlushTemperature: parseFloat(
+                  cleanedData.ColdFlushTemperature
+                ),
+                TMVFail: validValues.includes(
+                  cleanedData?.TMVFail?.trim()?.toLowerCase()
+                )
+                  ? true
+                  : invalidValues.includes(
+                      cleanedData?.TMVFail?.trim()?.toLowerCase()
+                    )
+                  ? false
+                  : "",
+                PreflushSampleTaken: validValues.includes(
+                  cleanedData?.PreflushSampleTaken?.trim()?.toLowerCase()
+                )
+                  ? true
+                  : invalidValues.includes(
+                      cleanedData?.PreflushSampleTaken?.trim()?.toLowerCase()
+                    )
+                  ? false
+                  : "",
+                PostflushSampleTaken: validValues.includes(
+                  cleanedData?.PostflushSampleTaken?.trim()?.toLowerCase()
+                )
+                  ? true
+                  : invalidValues.includes(
+                      cleanedData?.PostflushSampleTaken?.trim()?.toLowerCase()
+                    )
+                  ? false
+                  : "",
+                ThermalFlush: cleanedData.ThermalFlush,
+              };
 
-            let formattedDate;
-    if (data.Date) {
-      formattedDate = moment(data.Date, 'M/D/YYYY').toDate();
-    } else {
-    
-      formattedDate = null;
-    }
-    const validValues = ['yes', 'y', 'true','set'];
-    const invalidValues = ['no', 'n', 'false',"notset"];
-
-    const rowWithUsername = {
-      ...cleanedData,
-      Location: cleanedData.Location,
-      Zetacode: parseInt(cleanedData.Zetacode),
-      Room: cleanedData.Room,
-      Floor:parseInt(cleanedData.Floor),
-      HelpDeskReference: cleanedData.HelpDeskReference,
-      IPS: validValues.includes(cleanedData?.IPS?.trim()?.toLowerCase()) ? true : 
-           invalidValues.includes(cleanedData?.IPS?.trim()?.toLowerCase()) ? false : '',
-      Fault: cleanedData.Fault,
-      Date: formattedDate,
-      HotTemperature: parseFloat(cleanedData.HotTemperature),
-      HotFlow: parseFloat(cleanedData.HotFlow),
-      HotReturn: parseFloat(cleanedData.HotReturn),
-      ColdTemperature: parseFloat(cleanedData.ColdTemperature),
-      ColdFlow: parseFloat(cleanedData.ColdFlow),
-      ColdReturn: parseFloat(cleanedData.ColdReturn),
-      HotFlushTemperature: parseFloat(cleanedData.HotFlushTemperature),
-      TapNotSet: validValues.includes(cleanedData?.TapNotSet?.trim()?.toLowerCase()) ? true :
-                 invalidValues.includes(cleanedData?.TapNotSet?.trim()?.toLowerCase()) ? false : '',
-      ColdFlushTemperature: parseFloat(cleanedData.ColdFlushTemperature),
-      TMVFail: validValues.includes(cleanedData?.TMVFail?.trim()?.toLowerCase()) ? true :
-               invalidValues.includes(cleanedData?.TMVFail?.trim()?.toLowerCase()) ? false : '',
-      PreflushSampleTaken: validValues.includes(cleanedData?.PreflushSampleTaken?.trim()?.toLowerCase()) ? true :
-                          invalidValues.includes(cleanedData?.PreflushSampleTaken?.trim()?.toLowerCase()) ? false : '',
-      PostflushSampleTaken: validValues.includes(cleanedData?.PostflushSampleTaken?.trim()?.toLowerCase()) ? true :
-                            invalidValues.includes(cleanedData?.PostflushSampleTaken?.trim()?.toLowerCase()) ? false : '',
-      ThermalFlush: cleanedData.ThermalFlush,
-    };
-    
               bulkOps.push({ insertOne: { document: rowWithUsername } });
 
               successCount++;
@@ -790,7 +789,7 @@ console.log(cleanedData)
   }
 );
 
-app.post("/createUser", isAuthenticated,isAdmin, async (req, res) => {
+app.post("/createUser", isAuthenticated, isAdmin, async (req, res) => {
   const { username, password, permission } = req.body;
 
   try {
@@ -817,7 +816,6 @@ app.post("/createUser", isAuthenticated,isAdmin, async (req, res) => {
       },
     });
 
-
     res.json({ message: "User created successfully" });
   } catch (error) {
     console.error("Error while creating user:", error);
@@ -830,14 +828,15 @@ app.delete("/deleteUser", isAuthenticated, isAdmin, async (req, res) => {
 
   try {
     // Check if the user to delete exists
-    const userToDelete = await userDataCollection.findOne({ username: usernameToDelete });
+    const userToDelete = await userDataCollection.findOne({
+      username: usernameToDelete,
+    });
     if (!userToDelete) {
       return res.status(404).json({ message: "User not found" });
     }
 
     // Perform the delete operation
     await userDataCollection.deleteOne({ username: usernameToDelete });
-
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
@@ -851,7 +850,9 @@ app.put("/editUserPermission", isAuthenticated, isAdmin, async (req, res) => {
 
   try {
     // Check if the user to edit exists
-    const userToEdit = await userDataCollection.findOne({ username: usernameToEdit });
+    const userToEdit = await userDataCollection.findOne({
+      username: usernameToEdit,
+    });
     if (!userToEdit) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -867,15 +868,17 @@ app.put("/editUserPermission", isAuthenticated, isAdmin, async (req, res) => {
   }
 });
 
-app.get("/fetchUsers", isAuthenticated,isAdmin, async (req, res) => {
+app.get("/fetchUsers", isAuthenticated, isAdmin, async (req, res) => {
   const loggedInUsername = req.user.username;
 
   try {
     // Fetch all documents except the one with the same username as the logged-in user
-    const users = await userDataCollection.find(
-      { username: { $ne: loggedInUsername } },
-      { projection: { username: 1, permission: 1 } }
-    ).toArray();
+    const users = await userDataCollection
+      .find(
+        { username: { $ne: loggedInUsername } },
+        { projection: { username: 1, permission: 1 } }
+      )
+      .toArray();
 
     res.json({ users });
   } catch (error) {
@@ -884,7 +887,7 @@ app.get("/fetchUsers", isAuthenticated,isAdmin, async (req, res) => {
   }
 });
 
-app.get("/getUser/:id", isAuthenticated,isAdmin, async (req, res) => {
+app.get("/getUser/:id", isAuthenticated, isAdmin, async (req, res) => {
   const userId = req.params.id;
 
   try {
@@ -909,38 +912,43 @@ app.get("/getUser/:id", isAuthenticated,isAdmin, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-app.put("/updateUserPermissions/:id", isAuthenticated,isAdmin, async (req, res) => {
-  const userId = req.params.id;
-  const newPermissions = req.body.permissions;
+app.put(
+  "/updateUserPermissions/:id",
+  isAuthenticated,
+  isAdmin,
+  async (req, res) => {
+    const userId = req.params.id;
+    const newPermissions = req.body.permissions;
 
-  try {
-    // Check if the provided ID is a valid ObjectId
-    if (!ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid user ID" });
+    try {
+      // Check if the provided ID is a valid ObjectId
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Check if newPermissions is provided
+      if (!newPermissions) {
+        return res
+          .status(400)
+          .json({ message: "New permissions are required for the update" });
+      }
+
+      // Update user permissions in the database
+      const updatedUser = await userDataCollection.findOneAndUpdate(
+        { _id: new ObjectId(userId) },
+        { $set: { permission: newPermissions } },
+        { new: true, projection: { password: 0 } }
+      );
+
+      if (updatedUser) {
+        res.json({ user: updatedUser });
+      } else {
+        res.status(404).json({ message: "User not found" });
+      }
+    } catch (error) {
+      console.error("Error while updating user permissions:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-
-    // Check if newPermissions is provided
-    if (!newPermissions) {
-      return res
-        .status(400)
-        .json({ message: "New permissions are required for the update" });
-    }
-
-    // Update user permissions in the database
-    const updatedUser = await userDataCollection.findOneAndUpdate(
-      { _id: new ObjectId(userId) },
-      { $set: { permission: newPermissions } },
-      { new: true, projection: { password: 0 } }
-    );
-
-    if (updatedUser) {
-      res.json({ user: updatedUser });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    console.error("Error while updating user permissions:", error);
-    res.status(500).json({ message: "Internal server error" });
   }
-});
+);
 startServer();
