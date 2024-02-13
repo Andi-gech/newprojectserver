@@ -1,6 +1,7 @@
 const { MongoClient } = require("mongodb");
 
 async function connectToDatabase() {
+  console.log('connecting to database')
   try {
     const client = await MongoClient.connect(
       "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority",

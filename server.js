@@ -13,8 +13,21 @@ const cors = require("cors");
 const fastcsv = require("fast-csv");
 const jwt = require("jsonwebtoken");
 const stream = require("stream");
+const winston = require("winston");
 let mainDataCollection;
 let userDataCollection;
+const logger = winston.createLogger({
+  level: "info",
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: "error.log", level: "error" }),
+    new winston.transports.File({ filename: "combined.log" }),
+  ],
+});
+
 async function startServer() {
   try {
     const db = await dbManager.connectToDatabase();
@@ -26,6 +39,7 @@ async function startServer() {
     });
   } catch (error) {
     console.error("Failed to establish database connection:", error);
+    logger.error("An error occurred in Db connection:", error);
   }
 }
 
@@ -63,6 +77,7 @@ const isAuthenticated = (req, res, next) => {
     next();
   } catch (error) {
     console.error("Error during authentication:", error);
+    logger.error("Error during authentication:", error);
     res.status(401).json({ message: "Invalid token" });
   }
 };
@@ -139,7 +154,7 @@ app.post("/auth/signin", async (req, res) => {
       res.status(404).json({ message: "User not found" });
     }
   } catch (error) {
-    console.error("Error during sign-in:", error);
+    logger.error("An error occurred During Sign-in:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -216,6 +231,7 @@ app.post("/auth/changepassword", isAuthenticated, async (req, res) => {
     }
   } catch (error) {
     console.error("Error during password change:", error);
+    logger.error("An error occurred during password change:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -229,18 +245,30 @@ app.post("/adddata", [isAuthenticated, canEdit], async (req, res) => {
     res.json({ message: "Data added successfully" });
   } catch (error) {
     console.error("Error while adding data:", error);
+    logger.error("An error occurred while adding data:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
 
 app.get("/getdata", isAuthenticated, async (req, res) => {
   try {
+    const pageSize = 10;
+    const page = parseInt(req.query.page) || 1; 
+
+    const skip = (page - 1) * pageSize;
+
     const query = buildQuery(req.query);
 
     console.log("Query:", query);
 
+    const totalDocs = await mainDataCollection.countDocuments(query);
+
+    const totalPages = Math.ceil(totalDocs / pageSize);
+
     const data = await mainDataCollection
       .find(query, { projection: { additionalData: 0 } })
+      .skip(skip)
+      .limit(pageSize)
       .toArray();
 
     const formattedData = data.map((item) => {
@@ -269,13 +297,38 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
       };
     });
 
-    res.json(formattedData);
+    // Build pagination links
+    let next = null;
+    let previous = null;
+    if (page < totalPages) {
+      next = `/getdata?page=${page + 1}${getQueryString(req.query)}`;
+    }
+    if (page > 1) {
+      previous = `/getdata?page=${page - 1}${getQueryString(req.query)}`;
+    }
+    // Return data along with pagination links
+    res.json({
+      count: totalDocs,
+      next,
+      previous,
+      results: formattedData,
+    });
   } catch (error) {
     console.error("Error while retrieving data:", error);
+    logger.error("An error occurred while retrieving data:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
 
+function getQueryString(query) {
+  let queryString = "";
+  for (const key in query) {
+    if (query.hasOwnProperty(key) && key !== "page") {
+      queryString += `&${key}=${query[key]}`;
+    }
+  }
+  return queryString;
+}
 app.get("/generateCSV", isAuthenticated, async (req, res) => {
   try {
     const query = buildQuery(req.query);
@@ -319,6 +372,7 @@ app.get("/generateCSV", isAuthenticated, async (req, res) => {
     csvStream.end();
   } catch (error) {
     console.error("Error while generating CSV file:", error);
+    logger.error("An error occurred while generating CSV file:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -369,6 +423,7 @@ app.get("/generateExcel", isAuthenticated, async (req, res) => {
     res.send(excelBuffer);
   } catch (error) {
     console.error("Error while generating Excel file:", error);
+    logger.error("An error occurred while generating Excel file:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -409,7 +464,6 @@ function buildQuery(queryParams) {
     query.Date = { $gte: startDate, $lte: endDate };
   } else {
     console.error("Invalid startDate or endDate");
-    // Handle the error, e.g., return an error response
   }
 
   const zetacode = parseInt(queryParams.zetacode);
@@ -445,6 +499,7 @@ app.get("/getsingledata/:id", isAuthenticated, async (req, res) => {
     }
   } catch (error) {
     console.error("Error while retrieving data:", error);
+    logger.error("An error occurred while retrieving data:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -469,6 +524,7 @@ app.delete("/deletedata", [isAuthenticated, canEdit], async (req, res) => {
     }
   } catch (error) {
     console.error("Error while deleting data:", error);
+    logger.error("An error occurred while deleting data:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -506,6 +562,7 @@ app.put("/updatedata", [isAuthenticated, canEdit], async (req, res) => {
     }
   } catch (error) {
     console.error("Error while updating data:", error);
+    logger.error("An error occurred while updating data:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -541,6 +598,7 @@ app.put("/updatedataTable", [isAuthenticated, canEdit], async (req, res) => {
     }
   } catch (error) {
     console.error("Error while updating data:", error);
+    logger.error("An error occurred while updating data:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -554,11 +612,9 @@ app.delete(
     try {
       // Check if columnName is null or undefined
       if (!columnName) {
-        return res
-          .status(400)
-          .json({
-            message: "Invalid request. columnName is null or undefined.",
-          });
+        return res.status(400).json({
+          message: "Invalid request. columnName is null or undefined.",
+        });
       }
 
       // Specify the update operation to remove a field
@@ -574,6 +630,7 @@ app.delete(
       }
     } catch (error) {
       console.error("Error while deleting column:", error);
+      logger.error("An error occurred while deleting column:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }
@@ -784,6 +841,7 @@ app.post(
       console.log("Route execution completed");
     } catch (error) {
       console.error("Error while importing CSV:", error);
+      logger.error("An error occurred while importing CSV:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }
@@ -819,6 +877,7 @@ app.post("/createUser", isAuthenticated, isAdmin, async (req, res) => {
     res.json({ message: "User created successfully" });
   } catch (error) {
     console.error("Error while creating user:", error);
+    logger.error("An error occurred while creating user:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -841,6 +900,7 @@ app.delete("/deleteUser", isAuthenticated, isAdmin, async (req, res) => {
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("Error while deleting user:", error);
+    logger.error("An error occurred while deleting user:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -864,6 +924,7 @@ app.put("/editUserPermission", isAuthenticated, isAdmin, async (req, res) => {
     res.json({ message: "User permissions updated successfully" });
   } catch (error) {
     console.error("Error while editing user permissions:", error);
+    logger.error("An error occurred while editing user permissions:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -883,6 +944,7 @@ app.get("/fetchUsers", isAuthenticated, isAdmin, async (req, res) => {
     res.json({ users });
   } catch (error) {
     console.error("Error while fetching users:", error);
+    logger.error("An error occurred while fetching users:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -909,6 +971,7 @@ app.get("/getUser/:id", isAuthenticated, isAdmin, async (req, res) => {
     }
   } catch (error) {
     console.error("Error while retrieving user by ID:", error);
+    logger.error("An error occurred while retrieving user by ID:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -947,6 +1010,7 @@ app.put(
       }
     } catch (error) {
       console.error("Error while updating user permissions:", error);
+      logger.error("An error occurred while updating user permissions:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }
