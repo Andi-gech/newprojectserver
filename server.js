@@ -252,7 +252,7 @@ app.post("/adddata", [isAuthenticated, canEdit], async (req, res) => {
 
 app.get("/getdata", isAuthenticated, async (req, res) => {
   try {
-    const pageSize = 10;
+    const pageSize = 100;
     const page = parseInt(req.query.page) || 1; 
 
     const skip = (page - 1) * pageSize;
