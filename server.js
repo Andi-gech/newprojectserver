@@ -4,6 +4,7 @@ const { MongoError, ObjectId } = require("mongodb");
 
 const bcrypt = require("bcrypt");
 const app = express();
+const path =require('path')
 
 const multer = require("multer");
 const moment = require("moment");
@@ -14,6 +15,7 @@ const fastcsv = require("fast-csv");
 const jwt = require("jsonwebtoken");
 const stream = require("stream");
 const winston = require("winston");
+const exp = require("constants");
 let mainDataCollection;
 let userDataCollection;
 const logger = winston.createLogger({
@@ -54,6 +56,7 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+app.use(express.static(path.join(__dirname,'build')))
 const isAuthenticated = (req, res, next) => {
   const authHeader = req.header("Authorization");
 
@@ -107,6 +110,7 @@ const isAdmin = (req, res, next) => {
     next();
   }
 };
+
 
 // Sign-in route
 app.post("/auth/signin", async (req, res) => {
@@ -1015,4 +1019,7 @@ app.put(
     }
   }
 );
+app.get('*',(req,res)=>{
+  res.sendFile(path.join(__dirname,'build','index.html'))
+})
 startServer();
