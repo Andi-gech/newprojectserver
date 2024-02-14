@@ -10,7 +10,7 @@ async function connectToDatabase() {
     );
     return client.db("Mydatabase");
   } catch (error) {
-    throw new Error(`Failed to connect to the database: ${error.message}`);
+    throw new Error(`Failed to connect to the databases: ${error.message}`);
   }
 }
 
