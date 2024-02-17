@@ -36,8 +36,8 @@ async function startServer() {
     mainDataCollection = db.collection("maindatas");
     userDataCollection = db.collection("users");
 
-    app.listen(9050, () => {
-      console.log("Server running on port 9050");
+    app.listen(8080, () => {
+      console.log("Server running on port 8080");
     });
   } catch (error) {
     console.error("Failed to establish database connection:", error);
@@ -244,6 +244,7 @@ app.post("/adddata", [isAuthenticated, canEdit], async (req, res) => {
   const data = req.body;
 
   try {
+    data.Date = new Date(data.Date);
     await mainDataCollection.insertOne(data);
 
     res.json({ message: "Data added successfully" });
@@ -260,7 +261,7 @@ app.get("/getdata", isAuthenticated, async (req, res) => {
     const page = parseInt(req.query.page) || 1; 
 
     const skip = (page - 1) * pageSize;
-
+console.log(req.query)
     const query = buildQuery(req.query);
 
     console.log("Query:", query);
@@ -462,7 +463,7 @@ function buildQuery(queryParams) {
   const startDate = moment(queryParams.startDate, "YYYY-MM-DD").toDate();
   const endDate = moment(queryParams.endDate, "YYYY-MM-DD").toDate();
 
-  console.log(startDate);
+  console.log( 'start:',startDate);
   console.log(endDate);
   if (!isNaN(startDate) && !isNaN(endDate)) {
     query.Date = { $gte: startDate, $lte: endDate };
