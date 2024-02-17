@@ -5,7 +5,7 @@ async function connectToDatabase() {
   try {
     console.log('connecting to database')
     const client = await MongoClient.connect(
-      "mongodb+srv://andifab23:9801TJmE0HGLgQkO@senay.9gryt4n.mongodb.net/Mydatabase?retryWrites=true&w=majority",
+      "mongodb://localhost:27017",
       { useUnifiedTopology: true }
     );
     return client.db("Mydatabase");

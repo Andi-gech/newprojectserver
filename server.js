@@ -639,6 +639,35 @@ app.delete(
     }
   }
 );
+app.delete("/deleteAllData", [isAuthenticated, isAdmin], async (req, res) => {
+  try {
+    // Extract password from request body
+    const { password } = req.body;
+
+    // Check if password is provided
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+    const user = await userDataCollection.findOne({username:req.user.username });
+    // Verify the password using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    // If password is not valid, return error
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid password" });
+    }
+
+    // If password is valid, proceed with deleting data
+    const result = await mainDataCollection.deleteMany();
+
+    // Respond with success message
+    res.status(200).json({ message: "Data deleted successfully" });
+  } catch (error) {
+    // Handle errors
+    console.error("Error deleting data:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 app.post(
   "/importcsv",
